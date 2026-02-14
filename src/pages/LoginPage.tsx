@@ -5,10 +5,16 @@ export default function LoginPage() {
   const handleLogin = async () => {
     try {
       await signInWithGoogle();
+      // The AuthProvider will detect the user change,
+      // and AuthenticatedApp (or App.tsx routes) will handle the redirect.
+      // But we can also force a navigation if needed, though relying on auth state is better.
     } catch (error) {
       console.error("Login failed:", error);
     }
   };
+
+  // If already authenticated, redirect to dashboard
+  // (This logic is usually better in a wrapper or useEffect)
 
   return (
     <div className="login-page">

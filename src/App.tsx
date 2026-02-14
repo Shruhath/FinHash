@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useConvexAuth } from "convex/react";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { Toaster } from "sonner";
 import AuthenticatedApp from "./components/auth/AuthenticatedApp";
@@ -9,7 +10,11 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={
+            <RequireGuest>
+              <LoginPage />
+            </RequireGuest>
+          } />
           <Route path="/*" element={<AuthenticatedApp />} />
         </Routes>
       </BrowserRouter>
@@ -25,6 +30,14 @@ function App() {
       />
     </AuthProvider>
   );
+}
+
+function RequireGuest({ children }: { children: JSX.Element }) {
+  const { isAuthenticated } = useConvexAuth();
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
 }
 
 export default App;
