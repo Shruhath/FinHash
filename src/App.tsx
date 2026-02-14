@@ -1,11 +1,29 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./components/auth/AuthProvider";
+import { Toaster } from "sonner";
+import AuthenticatedApp from "./components/auth/AuthenticatedApp";
+import LoginPage from "./pages/LoginPage";
+
 function App() {
   return (
-    <div className="loading-screen">
-      <div className="loading-logo">
-        <span className="loading-logo__text">Fin</span>
-        <span className="loading-logo__hash">#</span>
-      </div>
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/*" element={<AuthenticatedApp />} />
+        </Routes>
+      </BrowserRouter>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: "var(--color-bg-card)",
+            border: "1px solid var(--color-border)",
+            color: "var(--color-text-primary)",
+          },
+        }}
+      />
+    </AuthProvider>
   );
 }
 

@@ -1,0 +1,121 @@
+.onboarding-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--color-bg-primary);
+  padding: var(--space-md);
+}
+
+.onboarding-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  padding: var(--space-2xl) var(--space-xl);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 460px;
+  box-shadow: var(--shadow-lg);
+}
+
+.onboarding-header {
+  text-align: center;
+}
+
+.onboarding-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: var(--space-md);
+}
+
+.onboarding-logo__text {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.onboarding-logo__hash {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-accent);
+}
+
+.onboarding-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.onboarding-subtitle {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px var(--space-md);
+  font-size: 1rem;
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-fast);
+  appearance: none;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.form-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.onboarding-submit {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.onboarding-submit:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+
+.onboarding-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
