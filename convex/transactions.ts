@@ -134,13 +134,11 @@ export const getTransactions = query({
 
     let transactions = await ctx.db
       .query("transactions")
-      .withIndex("by_user_date", (q) => {
-        let query = q.eq("userId", user._id);
-        if (args.startDate !== undefined) {
-          query = query.gte("date", args.startDate);
-        }
-        return query;
-      })
+      .withIndex("by_user_date", (q) =>
+        args.startDate !== undefined
+          ? q.eq("userId", user._id).gte("date", args.startDate)
+          : q.eq("userId", user._id)
+      )
       .collect();
 
     // Apply end date filter
