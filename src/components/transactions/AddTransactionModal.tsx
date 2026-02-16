@@ -22,6 +22,11 @@ export default function AddTransactionModal({ isOpen, onClose }: Props) {
   const addTransaction = useMutation(api.transactions.addTransaction);
   const splitTransaction = useMutation(api.transactions.splitTransaction);
 
+  // Budget check: get current month budgets
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const budgets = useQuery(api.budgets.getBudgetsWithSpending, { month: currentMonth }) ?? [];
+
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -126,6 +131,27 @@ export default function AddTransactionModal({ isOpen, onClose }: Props) {
           date: dateTimestamp,
           description: description || undefined,
         });
+
+        // Check budget warning
+        if (type === "expense") {
+          const budget = budgets.find((b) => b.categoryId === categoryId);
+          if (budget) {
+            const newSpent = budget.spent + parseFloat(amount);
+            const newPct = (newSpent / budget.budgetAmount) * 100;
+            if (newPct >= 100) {
+              const catName = budget.categoryName;
+              toast.warning(
+                `Budget Exceeded! "${catName}" is now at ${newPct.toFixed(0)}% (${newSpent.toFixed(2)} / ${budget.budgetAmount.toFixed(2)})`,
+                { duration: 5000 }
+              );
+            } else if (newPct >= 75) {
+              toast.warning(
+                `Budget Warning: "${budget.categoryName}" is at ${newPct.toFixed(0)}%`,
+                { duration: 4000 }
+              );
+            }
+          }
+        }
 
         toast.success("Transaction added!");
       }

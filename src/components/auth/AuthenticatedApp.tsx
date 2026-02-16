@@ -5,6 +5,10 @@ import { api } from "../../../convex/_generated/api";
 import OnboardingPage from "../../pages/OnboardingPage";
 import DashboardPage from "../../pages/DashboardPage";
 import TransactionsPage from "../../pages/TransactionsPage";
+import BudgetPage from "../../pages/BudgetPage";
+import GoalsPage from "../../pages/GoalsPage";
+import DebtsPage from "../../pages/DebtsPage";
+import AnalyticsPage from "../../pages/AnalyticsPage";
 
 function LoadingScreen() {
   return (
@@ -13,24 +17,6 @@ function LoadingScreen() {
         <span className="loading-logo__text">Fin</span>
         <span className="loading-logo__hash">#</span>
       </div>
-    </div>
-  );
-}
-
-// Placeholder pages for Phase 4+
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "60vh",
-        color: "var(--color-text-secondary)",
-        fontSize: "1.1rem",
-      }}
-    >
-      {title} — Coming in Phase 4
     </div>
   );
 }
@@ -82,10 +68,10 @@ export default function AuthenticatedApp() {
     <Routes>
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/transactions" element={<TransactionsPage />} />
-      <Route path="/budget" element={<PlaceholderPage title="Budget Manager" />} />
-      <Route path="/goals" element={<PlaceholderPage title="Savings Goals" />} />
-      <Route path="/debts" element={<PlaceholderPage title="Debts & Loans" />} />
-      <Route path="/analytics" element={<PlaceholderPage title="Analytics Hub" />} />
+      <Route path="/budget" element={<BudgetPage />} />
+      <Route path="/goals" element={<GoalsPage />} />
+      <Route path="/debts" element={<DebtsPage />} />
+      <Route path="/analytics" element={<AnalyticsPage />} />
       <Route path="/onboarding" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

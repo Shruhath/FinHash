@@ -1,0 +1,230 @@
+.debts-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  max-width: 800px;
+}
+
+.debts-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.debts-page__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.debts-page__subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+/* Summary Cards */
+.debts-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.debts-summary__card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.debts-summary__card--receive {
+  color: var(--color-income);
+}
+
+.debts-summary__card--pay {
+  color: var(--color-expense);
+}
+
+.debts-summary__card > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.debts-summary__label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.debts-summary__value {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* Debt Sections */
+.debt-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.debt-section__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.debt-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: var(--space-sm) 0;
+  transition: color var(--transition-fast);
+}
+
+.debt-section__toggle:hover {
+  color: var(--color-text-primary);
+}
+
+/* Debt List */
+.debt-list {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.debt-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color var(--transition-fast);
+}
+
+.debt-item:last-child {
+  border-bottom: none;
+}
+
+.debt-item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.debt-item--completed {
+  opacity: 0.6;
+}
+
+.debt-item--completed .debt-item__person {
+  text-decoration: line-through;
+}
+
+.debt-item__info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.debt-item__person {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.debt-item__meta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.debt-item__amount {
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.debt-item__actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.debt-item:hover .debt-item__actions {
+  opacity: 1;
+}
+
+.debt-item__settle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  color: var(--color-success);
+  transition: all var(--transition-fast);
+}
+
+.debt-item__settle-btn:hover {
+  background-color: rgba(34, 197, 94, 0.12);
+}
+
+/* Settlement Modal */
+.settle-modal__body {
+  padding: 0 var(--space-lg) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.settle-modal__body p {
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+}
+
+.settle-modal__hint {
+  font-size: 0.82rem !important;
+  color: var(--color-text-muted) !important;
+}
+
+.settle-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.settle-modal__actions .btn {
+  width: 100%;
+  text-align: center;
+  padding: 12px;
+}
+
+@media (max-width: 768px) {
+  .debts-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .debts-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .debt-item__actions {
+    opacity: 1;
+  }
+}
