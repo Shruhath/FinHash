@@ -148,23 +148,11 @@ export const getBudgetsWithSpending = query({
         }
       }
 
-      // Auto-create budgets for this month from recurring
+      // Return recurring budgets as virtual entries for this month
       for (const b of Object.values(latestPerCategory)) {
-        const newId = await ctx.db.insert("budgets", {
-          userId: user._id,
-          categoryId: b.categoryId,
-          amount: b.amount,
-          month: args.month,
-          isRecurring: true,
-        });
         budgets.push({
-          _id: newId,
-          _creationTime: Date.now(),
-          userId: user._id,
-          categoryId: b.categoryId,
-          amount: b.amount,
+          ...b,
           month: args.month,
-          isRecurring: true,
         });
       }
     }
