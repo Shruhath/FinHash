@@ -112,7 +112,7 @@ export default function CategoriesPage() {
     // Form State
     const [formName, setFormName] = useState("");
     const [formIcon, setFormIcon] = useState("MoreHorizontal");
-    const [formColor, setFormColor] = useState(AVAILABLE_COLORS[0]);
+    const [formColor, setFormColor] = useState(AVAILABLE_COLORS[0]!);
 
     const filteredCategories = categories.filter((c) => c.type === activeTab);
 
@@ -121,7 +121,7 @@ export default function CategoriesPage() {
         setEditingId(null);
         setFormName("");
         setFormIcon("MoreHorizontal");
-        setFormColor(AVAILABLE_COLORS[0]);
+        setFormColor(AVAILABLE_COLORS[0]!);
     };
 
     const startEdit = (c: (typeof categories)[number]) => {
