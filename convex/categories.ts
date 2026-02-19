@@ -128,6 +128,36 @@ export const deleteCategory = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const category = await ctx.db.get(args.id);
+    if (!category) throw new Error("Category not found");
+    if (category.isDefault) throw new Error("Cannot delete a default category");
+
+    // Check for linked transactions
+    const transaction = await ctx.db
+      .query("transactions")
+      .withIndex("by_user", (q) => q.eq("userId", category.userId!))
+      .filter((q) => q.eq(q.field("categoryId"), args.id))
+      .first();
+
+    if (transaction) {
+      throw new Error(
+        "Cannot delete this category because it has existing transactions. Reassign them first."
+      );
+    }
+
+    // Check for linked budgets
+    const budget = await ctx.db
+      .query("budgets")
+      .withIndex("by_user", (q) => q.eq("userId", category.userId!))
+      .filter((q) => q.eq(q.field("categoryId"), args.id))
+      .first();
+
+    if (budget) {
+      throw new Error(
+        "Cannot delete this category because it has existing budgets. Remove them first."
+      );
+    }
+
     await ctx.db.delete(args.id);
   },
 });

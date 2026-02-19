@@ -25,6 +25,7 @@ const NAV_ITEMS = [
   { to: "/budget", icon: Wallet, label: "Budget" },
   { to: "/goals", icon: Target, label: "Goals" },
   { to: "/debts", icon: HandCoins, label: "Debts" },
+  { to: "/categories", icon: Target, label: "Categories" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
 ];
 

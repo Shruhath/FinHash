@@ -8,6 +8,7 @@ import TransactionsPage from "../../pages/TransactionsPage";
 import BudgetPage from "../../pages/BudgetPage";
 import GoalsPage from "../../pages/GoalsPage";
 import DebtsPage from "../../pages/DebtsPage";
+import CategoriesPage from "../../pages/CategoriesPage";
 import AnalyticsPage from "../../pages/AnalyticsPage";
 
 function LoadingScreen() {
@@ -71,6 +72,7 @@ export default function AuthenticatedApp() {
       <Route path="/budget" element={<BudgetPage />} />
       <Route path="/goals" element={<GoalsPage />} />
       <Route path="/debts" element={<DebtsPage />} />
+      <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/analytics" element={<AnalyticsPage />} />
       <Route path="/onboarding" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

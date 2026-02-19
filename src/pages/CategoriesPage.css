@@ -1,0 +1,297 @@
+.categories-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  max-width: 900px;
+}
+
+.categories-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.categories-page__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.categories-page__subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.categories-page__add-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 10px var(--space-lg);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: var(--color-accent);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.categories-page__add-btn:hover {
+  background-color: var(--color-accent-hover);
+}
+
+/* Tabs */
+.categories-tabs {
+  display: flex;
+  gap: 4px;
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  border: 1px solid var(--color-border);
+}
+
+.categories-tabs__btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.categories-tabs__btn--active {
+  color: #ffffff;
+  background-color: var(--color-accent);
+}
+
+/* Category Grid */
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-md);
+}
+
+/* Category Card */
+.category-card {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  transition: border-color var(--transition-fast);
+}
+
+.category-card:hover {
+  border-color: var(--color-border-light);
+}
+
+.category-card__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.category-card__details {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-card__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-card__badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background-color: var(--color-bg-elevated);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+.category-card__actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.category-card:hover .category-card__actions {
+  opacity: 1;
+}
+
+.category-card__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.category-card__action-btn:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-hover);
+}
+
+.category-card__action-btn--delete:hover {
+  color: var(--color-danger);
+}
+
+/* Empty State */
+.categories-empty {
+  text-align: center;
+  padding: var(--space-2xl);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+}
+
+.categories-empty__hint {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-xs);
+}
+
+/* === Modal Additions (extends existing modal styles) === */
+
+/* Icon Picker */
+.icon-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.icon-picker__label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.icon-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.icon-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-fast);
+}
+
+.icon-picker__item:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-muted);
+}
+
+.icon-picker__item--selected {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-light);
+}
+
+/* Color Picker */
+.color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.color-picker__label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.color-picker__row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-picker__swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.color-picker__swatch:hover {
+  transform: scale(1.15);
+}
+
+.color-picker__swatch--selected {
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-bg-card), 0 0 0 4px currentColor;
+}
+
+.color-picker__swatch--selected::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-bg-card);
+}
+
+/* Form Group */
+.cat-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.cat-form__label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .categories-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .category-card__actions {
+    opacity: 1;
+  }
+
+  .icon-picker__grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
