@@ -66,7 +66,7 @@ export default function TransactionsPage() {
     categories.find((c) => c._id === catId)?.color ?? "#71717a";
 
   const formatCurrency = (amount: number) =>
-    `${currencySymbol}${amount.toLocaleString(undefined, {
+    `${currencySymbol} ${amount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -121,44 +121,149 @@ export default function TransactionsPage() {
   const hasActiveFilters =
     !!typeFilter || !!categoryFilter || !!startDate || !!endDate;
 
+  // CSV Import Handler
+  const importTransactions = useMutation(api.migration.importTransactions);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      // Split by newline but handle standard line endings
+      const rows = text.split(/\r?\n/).slice(1);
+
+      const transactions = rows
+        .map((row, index) => {
+          if (!row.trim()) return null;
+
+          // Robust CSV regex to handle quoted fields containing commas
+          const regex = /(?:^|,)(?:"([^"]*)"|([^",]*))/g;
+          const cols: string[] = [];
+
+          let match;
+
+          // Safety: Prevent infinite loops (e.g. if regex matches empty string repeatedly without consuming)
+          while ((match = regex.exec(row)) !== null) {
+            // match[1] is quoted content, match[2] is unquoted
+            let val = match[1] !== undefined ? match[1] : match[2];
+            val = val ? val.trim() : "";
+            cols.push(val);
+            if (cols.length > 50) break; // Hard limit for columns to prevent crash
+          }
+
+          if (cols.length < 9) {
+            // Fallback for simple split if regex didn't find enough cols (unlikely but safe)
+            const simpleCols = row.split(",");
+            if (simpleCols.length >= 9) {
+              // Map simple split to cols if regex failed
+              cols.length = 0;
+              simpleCols.forEach(c => cols.push(c.trim()));
+            } else {
+              console.warn(`Row ${index + 2} has insufficient columns: ${cols.length}`);
+              return null;
+            }
+          }
+
+          // Index mapping based on user's CSV:
+          // 0:_creationTime, 1:_id, 2:amount, 3:categoryId, 4:date, 
+          // 5:description, 6:isRecurring, 7:type, 8:categoryName
+
+          const amountStr = cols[2];
+          const date = cols[4];
+          const description = cols[5]?.replace(/"/g, ""); // Extra cleanup
+          const typeStr = cols[7];
+          const categoryName = cols[8]?.replace(/"/g, "") || "Uncategorized";
+
+          if (!amountStr || !date || !description || !typeStr) {
+            console.warn(`Row ${index + 2} missing required fields`);
+            return null;
+          }
+
+          const amount = parseFloat(amountStr);
+          const type = typeStr.toLowerCase().includes("income") ? "income" : "expense";
+
+          if (isNaN(amount)) {
+            console.warn(`Row ${index + 2} has invalid amount: ${amountStr}`);
+            return null;
+          }
+
+          return {
+            amount,
+            date,
+            description,
+            type: type as "income" | "expense",
+            categoryName,
+          };
+        })
+        .filter((t): t is any => t !== null);
+
+      if (transactions.length === 0) {
+        toast.error("No valid transactions found");
+        return;
+      }
+
+      const result = await importTransactions({ transactions });
+      toast.success(`Imported ${result.count} transactions successfully!`);
+
+      // Clear input
+      e.target.value = "";
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to import transactions");
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="transactions-page">
-        <div className="transactions-page__header">
+        <div className="transactions-header">
           <div>
-            <h1 className="transactions-page__title">Transactions</h1>
-            <p className="transactions-page__count">
-              {filteredTransactions.length} transaction
-              {filteredTransactions.length !== 1 ? "s" : ""}
+            <h1 className="transactions-header__title">Transactions</h1>
+            <p className="transactions-header__subtitle">
+              Manage your income and expenses
             </p>
           </div>
-          <div className="transactions-page__actions">
+          <div className="transactions-header__actions">
+            <label className="btn btn--secondary" style={{ cursor: "pointer" }}>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileUpload}
+                style={{ display: "none" }}
+              />
+              <span>Import CSV</span>
+            </label>
             <button
-              className={`transactions-page__filter-btn ${hasActiveFilters ? "transactions-page__filter-btn--active" : ""}`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter size={18} />
-              Filters
-              {hasActiveFilters && (
-                <span
-                  className="transactions-page__filter-clear"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearFilters();
-                  }}
-                >
-                  <X size={14} />
-                </span>
-              )}
-            </button>
-            <button
-              className="dashboard__add-btn"
+              className="btn btn--primary"
               onClick={() => setShowAddModal(true)}
             >
-              <Plus size={20} />
-              <span>Add</span>
+              <Plus size={18} />
+              <span>Add Transaction</span>
             </button>
           </div>
+        </div>
+
+        <div className="transactions-page__actions">
+          <button
+            className={`transactions-page__filter-btn ${hasActiveFilters ? "transactions-page__filter-btn--active" : ""
+              }`}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter size={18} />
+            Filters
+            {hasActiveFilters && (
+              <span
+                className="transactions-page__filter-clear"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearFilters();
+                }}
+              >
+                <X size={14} />
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Filters */}
@@ -302,9 +407,8 @@ export default function TransactionsPage() {
                       </span>
                     </div>
                     <span
-                      className={`tx-item__amount ${
-                        tx.type === "income" ? "text-income" : "text-expense"
-                      }`}
+                      className={`tx-item__amount ${tx.type === "income" ? "text-income" : "text-expense"
+                        }`}
                     >
                       {tx.type === "income" ? "+" : "-"}
                       {formatCurrency(tx.amount)}

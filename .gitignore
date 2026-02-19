@@ -42,3 +42,8 @@ convex_firebase_setup_guide.md
 
 # Agent Artifacts
 .gemini/
+
+# Data Migration Files
+*.csv
+*.xlsx
+*.xls
