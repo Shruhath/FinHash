@@ -391,7 +391,7 @@ export default function TransactionsPage() {
                     />
                     <div className="tx-item__info">
                       <span className="tx-item__category">
-                        {getCategoryName(tx.categoryId)}
+                        {tx.description || getCategoryName(tx.categoryId)}
                       </span>
                       <span className="tx-item__meta">
                         {new Date(tx.date).toLocaleDateString(undefined, {
@@ -400,7 +400,7 @@ export default function TransactionsPage() {
                           day: "numeric",
                           year: "numeric",
                         })}
-                        {tx.description && ` · ${tx.description}`}
+                        {` · ${getCategoryName(tx.categoryId)}`}
                         {tx.splitGroupId && (
                           <span className="tx-item__split-badge">Split</span>
                         )}

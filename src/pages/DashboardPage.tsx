@@ -315,6 +315,7 @@ export default function DashboardPage() {
                         color: "var(--color-text-primary)",
                         fontSize: "0.85rem",
                       }}
+                      itemStyle={{ color: "var(--color-text-primary)" }}
                       formatter={(value: number) => formatCurrency(value)}
                     />
                   </PieChart>
@@ -352,19 +353,18 @@ export default function DashboardPage() {
                     />
                     <div className="recent-item__info">
                       <span className="recent-item__category">
-                        {getCategoryName(tx.categoryId)}
+                        {tx.description || getCategoryName(tx.categoryId)}
                       </span>
                       <span className="recent-item__date">
                         {formatDate(tx.date)}
-                        {tx.description && ` · ${tx.description}`}
+                        {` · ${getCategoryName(tx.categoryId)}`}
                       </span>
                     </div>
                     <span
-                      className={`recent-item__amount ${
-                        tx.type === "income"
-                          ? "text-income"
-                          : "text-expense"
-                      }`}
+                      className={`recent-item__amount ${tx.type === "income"
+                        ? "text-income"
+                        : "text-expense"
+                        }`}
                     >
                       {tx.type === "income" ? "+" : "-"}
                       {formatCurrency(tx.amount)}
@@ -397,9 +397,8 @@ export default function DashboardPage() {
                     -{formatCurrency(m.expense)}
                   </span>
                   <span
-                    className={`yearly-grid__balance ${
-                      m.balance >= 0 ? "text-income" : "text-expense"
-                    }`}
+                    className={`yearly-grid__balance ${m.balance >= 0 ? "text-income" : "text-expense"
+                      }`}
                   >
                     {formatCurrency(m.balance)}
                   </span>
@@ -428,9 +427,8 @@ export default function DashboardPage() {
                         -{formatCurrency(data.expense)}
                       </span>
                       <span
-                        className={`yearly-grid__balance ${
-                          data.balance >= 0 ? "text-income" : "text-expense"
-                        }`}
+                        className={`yearly-grid__balance ${data.balance >= 0 ? "text-income" : "text-expense"
+                          }`}
                       >
                         {formatCurrency(data.balance)}
                       </span>
