@@ -27,13 +27,19 @@ export default function AddTransactionModal({ isOpen, onClose }: Props) {
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const budgets = useQuery(api.budgets.getBudgetsWithSpending, { month: currentMonth }) ?? [];
 
+  // Helper to get local datetime string for the input
+  const getLocalDateTimeString = () => {
+    const now = new Date();
+    // Adjust for local timezone offset
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  };
+
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(
-    new Date().toISOString().slice(0, 16) // datetime-local format
-  );
+  const [date, setDate] = useState(getLocalDateTimeString());
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<SplitRow[]>([
     { amount: "", categoryId: "", description: "" },
@@ -48,7 +54,7 @@ export default function AddTransactionModal({ isOpen, onClose }: Props) {
     setAmount("");
     setCategoryId("");
     setDescription("");
-    setDate(new Date().toISOString().slice(0, 16));
+    setDate(getLocalDateTimeString());
     setIsSplit(false);
     setSplits([
       { amount: "", categoryId: "", description: "" },
@@ -274,11 +280,10 @@ export default function AddTransactionModal({ isOpen, onClose }: Props) {
               <div className="split-section__header">
                 <span className="form-label">Split Details</span>
                 <span
-                  className={`split-section__total ${
-                    amount && Math.abs(splitTotal - parseFloat(amount)) > 0.01
+                  className={`split-section__total ${amount && Math.abs(splitTotal - parseFloat(amount)) > 0.01
                       ? "split-section__total--mismatch"
                       : ""
-                  }`}
+                    }`}
                 >
                   {splitTotal.toFixed(2)} / {parseFloat(amount || "0").toFixed(2)}
                 </span>

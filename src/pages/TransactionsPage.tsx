@@ -85,7 +85,12 @@ export default function TransactionsPage() {
     setEditAmount(tx.amount.toString());
     setEditCategory(tx.categoryId);
     setEditDescription(tx.description ?? "");
-    setEditDate(new Date(tx.date).toISOString().slice(0, 16));
+
+    // Adjust for timezone to display correctly in datetime-local input
+    const localDate = new Date(tx.date);
+    localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+    setEditDate(localDate.toISOString().slice(0, 16));
+
     setEditType(tx.type);
   };
 
