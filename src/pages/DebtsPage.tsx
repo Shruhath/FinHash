@@ -206,14 +206,6 @@ export default function DebtsPage() {
                 </div>
               )}
               <input
-                type="text"
-                className="form-input"
-                value={formPerson}
-                onChange={(e) => setFormPerson(e.target.value)}
-                placeholder="Person name"
-                required
-              />
-              <input
                 type="number"
                 className="form-input"
                 value={formAmount}
@@ -221,6 +213,14 @@ export default function DebtsPage() {
                 placeholder="Amount"
                 min="0.01"
                 step="0.01"
+                required
+              />
+              <input
+                type="text"
+                className="form-input"
+                value={formPerson}
+                onChange={(e) => setFormPerson(e.target.value)}
+                placeholder="Person name"
                 required
               />
               <input
