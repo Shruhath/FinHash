@@ -99,7 +99,7 @@ export default function LoginPage() {
               <span className="login__feature-icon">
                 <Icon size={17} />
               </span>
-              <div>
+              <div className="login__feature-text">
                 <strong>{title}</strong>
                 <span>{text}</span>
               </div>

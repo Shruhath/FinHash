@@ -1,4 +1,5 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { useReducedMotion } from "framer-motion";
 import ChartTooltip from "../ui/ChartTooltip";
 
 export interface DonutSlice {
@@ -26,6 +27,8 @@ export default function CategoryDonut({
   innerRadius = 62,
   outerRadius = 88,
 }: Props) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
@@ -38,6 +41,9 @@ export default function CategoryDonut({
           paddingAngle={2.5}
           dataKey="value"
           stroke="none"
+          isAnimationActive={!reduceMotion}
+          animationDuration={650}
+          animationEasing="ease-out"
         >
           {data.map((entry, index) => (
             <Cell key={index} fill={entry.color} />

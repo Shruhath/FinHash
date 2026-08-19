@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Area,
   AreaChart,
@@ -38,6 +38,14 @@ export default function AnalyticsPage() {
   const [range, setRange] = useState<Range>("6");
   const { format, compact } = useCurrency();
   const isMobile = useIsMobile();
+  const reduceMotion = useReducedMotion();
+
+  /** Recharts defaults to a 1.5s reveal, which feels sluggish here. */
+  const anim = {
+    isAnimationActive: !reduceMotion,
+    animationDuration: 650,
+    animationEasing: "ease-out" as const,
+  };
 
   const analytics = useQuery(api.analytics.getAnalyticsData, {
     months: Number(range),
@@ -251,12 +259,14 @@ export default function AnalyticsPage() {
               fill="var(--color-income)"
               radius={[5, 5, 0, 0]}
               maxBarSize={22}
+              {...anim}
             />
             <Bar
               dataKey="expense"
               fill="var(--color-expense)"
               radius={[5, 5, 0, 0]}
               maxBarSize={22}
+              {...anim}
             />
             <Line
               type="monotone"
@@ -264,6 +274,7 @@ export default function AnalyticsPage() {
               stroke="var(--color-accent)"
               strokeWidth={2.5}
               dot={false}
+              {...anim}
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -316,6 +327,7 @@ export default function AnalyticsPage() {
                 strokeWidth={2.5}
                 fill="url(#spendGrad)"
                 activeDot={{ r: 4, strokeWidth: 0 }}
+                {...anim}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -351,6 +363,7 @@ export default function AnalyticsPage() {
                       paddingAngle={2.5}
                       dataKey="value"
                       stroke="none"
+                      {...anim}
                     >
                       {pieData.map((entry, index) => (
                         <Cell key={index} fill={entry.color} />
