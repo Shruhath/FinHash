@@ -1,6 +1,11 @@
 import { ReactNode, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useDragControls,
+  useReducedMotion,
+} from "framer-motion";
 import { X } from "lucide-react";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { haptic } from "../../lib/haptics";
@@ -37,6 +42,7 @@ export default function Sheet({
   const isMobile = useIsMobile();
   const reduceMotion = useReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
+  const dragControls = useDragControls();
   const titleId = useId();
 
   // Lock the page behind the sheet without losing scroll position.
@@ -84,6 +90,9 @@ export default function Sheet({
         exit: { y: "100%" },
         transition: reduceMotion ? { duration: 0 } : springSoft,
         drag: dismissible ? ("y" as const) : undefined,
+        // Only the grabber/header starts a drag, so the body scrolls normally.
+        dragListener: false,
+        dragControls,
         dragConstraints: { top: 0, bottom: 0 },
         dragElastic: { top: 0, bottom: 0.6 },
         onDragEnd: (
@@ -121,10 +130,28 @@ export default function Sheet({
             aria-labelledby={title ? titleId : undefined}
             {...panelMotion}
           >
-            {isMobile && dismissible && <div className="sheet__grabber" />}
+            {isMobile && dismissible && (
+              <div
+                className="sheet__handle"
+                onPointerDown={(e) => dragControls.start(e)}
+              >
+                <span className="sheet__grabber" />
+              </div>
+            )}
 
             {(title || dismissible) && (
-              <header className="sheet__header">
+              <header
+                className="sheet__header"
+                onPointerDown={
+                  isMobile && dismissible
+                    ? (e) => {
+                        // Buttons inside the header keep their own behaviour.
+                        if ((e.target as HTMLElement).closest("button")) return;
+                        dragControls.start(e);
+                      }
+                    : undefined
+                }
+              >
                 <div className="sheet__heading">
                   {title && (
                     <h2 className="sheet__title" id={titleId}>

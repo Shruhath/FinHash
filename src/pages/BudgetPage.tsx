@@ -243,12 +243,11 @@ export default function BudgetPage() {
               </div>
               {isCurrentMonth && (
                 <div className="budget-fact">
-                  <span className="budget-fact__label">
-                    Safe daily spend · {daysLeft}d left
-                  </span>
+                  <span className="budget-fact__label">Safe per day</span>
                   <span className="budget-fact__value money">
                     {compact(dailyAllowance)}
                   </span>
+                  <span className="budget-fact__hint">{daysLeft} days left</span>
                 </div>
               )}
             </div>

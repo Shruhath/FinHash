@@ -434,8 +434,18 @@ button {
 }
 
 .btn:disabled {
-  opacity: 0.45;
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* A dimmed gradient reads as broken, so disabled primaries go flat instead */
+.btn--primary:disabled,
+.btn--accent:disabled,
+.btn--danger-solid:disabled {
+  opacity: 1;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-faint);
+  box-shadow: none;
 }
 
 .btn--sm {
@@ -622,15 +632,19 @@ button {
   color: var(--color-danger);
 }
 
+/* Element selectors are wrapped in :where() so they add no specificity —
+   utility classes and modifiers below always win regardless of load order. */
 .form-input,
-input[type="text"],
-input[type="number"],
-input[type="email"],
-input[type="date"],
-input[type="datetime-local"],
-input[type="search"],
-select,
-textarea {
+:where(
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="date"],
+    input[type="datetime-local"],
+    input[type="search"],
+    select,
+    textarea
+  ) {
   width: 100%;
   height: 46px;
   padding: 0 var(--space-md);
@@ -645,7 +659,7 @@ textarea {
   appearance: none;
 }
 
-textarea {
+:where(textarea) {
   height: auto;
   min-height: 88px;
   padding: var(--space-md);
@@ -654,22 +668,19 @@ textarea {
 }
 
 .form-input::placeholder,
-input::placeholder,
-textarea::placeholder {
+:where(input, textarea)::placeholder {
   color: var(--color-text-faint);
 }
 
 .form-input:focus,
-input:focus,
-select:focus,
-textarea:focus {
+:where(input, select, textarea):focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--color-accent-softer);
   background-color: var(--color-bg-elevated);
 }
 
-select {
+:where(select) {
   padding-right: var(--space-2xl);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2362626c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
   background-repeat: no-repeat;
@@ -677,18 +688,17 @@ select {
   cursor: pointer;
 }
 
-select option {
+:where(select) option {
   background-color: var(--color-bg-elevated);
   color: var(--color-text-primary);
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+:where(input[type="date"], input[type="datetime-local"])::-webkit-calendar-picker-indicator {
   filter: invert(0.5);
   cursor: pointer;
 }
 
-input[type="checkbox"] {
+:where(input[type="checkbox"]) {
   width: 20px;
   height: 20px;
   accent-color: var(--color-accent);
@@ -706,11 +716,11 @@ input[type="checkbox"] {
   font-variant-numeric: tabular-nums;
 }
 
-input[type="number"] {
+:where(input[type="number"]) {
   -moz-appearance: textfield;
 }
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
+:where(input[type="number"])::-webkit-outer-spin-button,
+:where(input[type="number"])::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }

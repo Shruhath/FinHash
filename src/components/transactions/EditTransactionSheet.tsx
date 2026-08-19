@@ -6,6 +6,7 @@ import { Doc, Id } from "../../../convex/_generated/dataModel";
 import Sheet from "../ui/Sheet";
 import SegmentedControl from "../ui/SegmentedControl";
 import CategoryIcon from "../ui/CategoryIcon";
+import { Trash2 } from "lucide-react";
 import { useCurrency } from "../../hooks/useCurrency";
 import { toDateTimeLocal } from "../../lib/format";
 import { haptic } from "../../lib/haptics";
@@ -13,9 +14,15 @@ import { haptic } from "../../lib/haptics";
 interface Props {
   transaction: Doc<"transactions"> | null;
   onClose: () => void;
+  /** Shown as a destructive action inside the sheet (mobile has no row buttons). */
+  onDelete?: (transaction: Doc<"transactions">) => void;
 }
 
-export default function EditTransactionSheet({ transaction, onClose }: Props) {
+export default function EditTransactionSheet({
+  transaction,
+  onClose,
+  onDelete,
+}: Props) {
   const categories = useQuery(api.categories.getCategories) ?? [];
   const editTransaction = useMutation(api.transactions.editTransaction);
   const { symbol } = useCurrency();
@@ -73,9 +80,20 @@ export default function EditTransactionSheet({ transaction, onClose }: Props) {
       title="Edit transaction"
       footer={
         <>
-          <button className="btn btn--ghost" onClick={onClose} type="button">
-            Cancel
-          </button>
+          {onDelete && transaction ? (
+            <button
+              className="btn btn--danger"
+              type="button"
+              onClick={() => onDelete(transaction)}
+            >
+              <Trash2 size={16} />
+              Delete
+            </button>
+          ) : (
+            <button className="btn btn--ghost" onClick={onClose} type="button">
+              Cancel
+            </button>
+          )}
           <button
             className="btn btn--accent"
             form="edit-transaction-form"

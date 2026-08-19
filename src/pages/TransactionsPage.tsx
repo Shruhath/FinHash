@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { useCurrency } from "../hooks/useCurrency";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import { useShell } from "../components/layout/AppShell";
 import PageHeader from "../components/ui/PageHeader";
 import Sheet from "../components/ui/Sheet";
@@ -32,12 +33,16 @@ import "./TransactionsPage.css";
 
 type TypeFilter = "all" | "income" | "expense";
 
+/** Rows painted per batch — keeps long histories smooth on mobile. */
+const PAGE_SIZE = 60;
+
 export default function TransactionsPage() {
   const categories = useQuery(api.categories.getCategories) ?? [];
   const deleteTransaction = useMutation(api.transactions.deleteTransaction);
   const importTransactions = useMutation(api.migration.importTransactions);
   const { format } = useCurrency();
   const { openAdd } = useShell();
+  const isMobile = useIsMobile();
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -49,6 +54,7 @@ export default function TransactionsPage() {
   const [pendingDelete, setPendingDelete] = useState<Doc<"transactions"> | null>(
     null
   );
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const queryArgs: {
@@ -82,11 +88,21 @@ export default function TransactionsPage() {
     });
   }, [transactions, search, categoryFilter, categoryById]);
 
+  // Reset paging whenever the result set changes underneath us.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, typeFilter, categoryFilter, startDate, endDate]);
+
+  const visible = useMemo(
+    () => (filtered ? filtered.slice(0, visibleCount) : undefined),
+    [filtered, visibleCount]
+  );
+
   /** Group into day buckets so the list reads like a statement. */
   const groups = useMemo(() => {
-    if (!filtered) return [];
+    if (!visible) return [];
     const map = new Map<string, { label: string; items: Doc<"transactions">[] }>();
-    for (const tx of filtered) {
+    for (const tx of visible) {
       const day = new Date(tx.date);
       day.setHours(0, 0, 0, 0);
       const key = String(day.getTime());
@@ -96,7 +112,7 @@ export default function TransactionsPage() {
     return [...map.entries()]
       .sort(([a], [b]) => Number(b) - Number(a))
       .map(([key, value]) => ({ key, ...value }));
-  }, [filtered]);
+  }, [visible]);
 
   const totals = useMemo(() => {
     const income = (filtered ?? [])
@@ -229,7 +245,7 @@ export default function TransactionsPage() {
             className="search-field__input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search notes, categories, amounts"
+            placeholder="Search transactions"
             aria-label="Search transactions"
           />
           {search && (
@@ -287,13 +303,13 @@ export default function TransactionsPage() {
           <div className="tx-totals__item">
             <span className="tx-totals__label">In</span>
             <span className="tx-totals__value money text-income">
-              {format(totals.income)}
+              {format(totals.income, { decimals: false })}
             </span>
           </div>
           <div className="tx-totals__item">
             <span className="tx-totals__label">Out</span>
             <span className="tx-totals__value money text-expense">
-              {format(totals.expense)}
+              {format(totals.expense, { decimals: false })}
             </span>
           </div>
           <div className="tx-totals__item">
@@ -301,7 +317,7 @@ export default function TransactionsPage() {
             <span
               className={`tx-totals__value money ${totals.net >= 0 ? "text-income" : "text-expense"}`}
             >
-              {format(totals.net)}
+              {format(totals.net, { decimals: false })}
             </span>
           </div>
         </div>
@@ -408,6 +424,14 @@ export default function TransactionsPage() {
                             {format(tx.amount)}
                           </span>
 
+                          {isMobile && (
+                            <button
+                              className="tx-row__hit"
+                              onClick={() => setEditing(tx)}
+                              aria-label={`Edit ${tx.description || "transaction"}`}
+                            />
+                          )}
+
                           <div className="tx-row__actions">
                             <button
                               className="icon-btn"
@@ -432,6 +456,18 @@ export default function TransactionsPage() {
               </section>
             );
           })}
+
+          {filtered.length > visibleCount && (
+            <button
+              className="btn btn--secondary btn--block tx-load-more"
+              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            >
+              Load {Math.min(PAGE_SIZE, filtered.length - visibleCount)} more
+              <span className="text-muted">
+                · {filtered.length - visibleCount} remaining
+              </span>
+            </button>
+          )}
         </div>
       )}
 
@@ -553,6 +589,10 @@ export default function TransactionsPage() {
       <EditTransactionSheet
         transaction={editing}
         onClose={() => setEditing(null)}
+        onDelete={(tx) => {
+          setEditing(null);
+          setPendingDelete(tx);
+        }}
       />
 
       <ConfirmDialog

@@ -25,7 +25,12 @@ import EmptyState from "../components/ui/EmptyState";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import AnimatedNumber from "../components/ui/AnimatedNumber";
 import { SkeletonCard } from "../components/ui/Skeleton";
-import { formatDayLabel, initialsOf, toDateInput } from "../lib/format";
+import {
+  formatDayLabel,
+  formatShortDate,
+  initialsOf,
+  toDateInput,
+} from "../lib/format";
 import { listItemVariants, listVariants } from "../lib/motion";
 import { haptic } from "../lib/haptics";
 import "./DebtsPage.css";
@@ -211,26 +216,26 @@ export default function DebtsPage() {
 
               <div className="debts-summary__split">
                 <div className="debts-summary__card">
-                  <span className="debts-summary__icon debts-summary__icon--in">
-                    <ArrowDownLeft size={16} />
-                  </span>
-                  <div>
-                    <span className="debts-summary__label">To receive</span>
-                    <span className="debts-summary__value money text-income">
-                      {format(totals.receive)}
+                  <span className="debts-summary__label">
+                    <span className="debts-summary__icon debts-summary__icon--in">
+                      <ArrowDownLeft size={13} />
                     </span>
-                  </div>
+                    To receive
+                  </span>
+                  <span className="debts-summary__value money text-income">
+                    {format(totals.receive)}
+                  </span>
                 </div>
                 <div className="debts-summary__card">
-                  <span className="debts-summary__icon debts-summary__icon--out">
-                    <ArrowUpRight size={16} />
-                  </span>
-                  <div>
-                    <span className="debts-summary__label">To pay</span>
-                    <span className="debts-summary__value money text-expense">
-                      {format(totals.pay)}
+                  <span className="debts-summary__label">
+                    <span className="debts-summary__icon debts-summary__icon--out">
+                      <ArrowUpRight size={13} />
                     </span>
-                  </div>
+                    To pay
+                  </span>
+                  <span className="debts-summary__value money text-expense">
+                    {format(totals.pay)}
+                  </span>
                 </div>
               </div>
             </motion.section>
@@ -341,14 +346,30 @@ export default function DebtsPage() {
         onClose={() => setFormOpen(false)}
         title={editing ? "Edit debt" : "Track a debt"}
         footer={
-          <button
-            className="btn btn--accent btn--block"
-            form="debt-form"
-            type="submit"
-            disabled={!person.trim() || !amount}
-          >
-            {editing ? "Save changes" : "Track it"}
-          </button>
+          <>
+            {editing && (
+              <button
+                className="btn btn--danger"
+                type="button"
+                onClick={() => {
+                  const target = editing;
+                  setFormOpen(false);
+                  setPendingDelete(target);
+                }}
+              >
+                <Trash2 size={16} />
+                Delete
+              </button>
+            )}
+            <button
+              className="btn btn--accent"
+              form="debt-form"
+              type="submit"
+              disabled={!person.trim() || !amount}
+            >
+              {editing ? "Save changes" : "Track it"}
+            </button>
+          </>
         }
       >
         <form id="debt-form" className="budget-form" onSubmit={handleSubmit}>
@@ -541,14 +562,15 @@ function DebtSection({
                   <span className="debt-row__meta truncate">
                     {d.description || (d.type === "lent" ? "Lent out" : "Borrowed")}
                     {d.dueDate && (
-                      <span className={overdue ? "text-danger" : ""}>
-                        {" · "}
+                      <span
+                        className={`debt-row__due ${overdue ? "text-danger" : ""}`}
+                      >
                         {overdue ? (
-                          <TriangleAlert size={11} style={{ display: "inline" }} />
+                          <TriangleAlert size={11} />
                         ) : (
-                          <CalendarClock size={11} style={{ display: "inline" }} />
-                        )}{" "}
-                        {formatDayLabel(d.dueDate)}
+                          <CalendarClock size={11} />
+                        )}
+                        {overdue ? "Overdue" : formatShortDate(d.dueDate)}
                       </span>
                     )}
                   </span>
@@ -560,6 +582,12 @@ function DebtSection({
                   {format(d.amount)}
                 </span>
 
+                <button
+                  className="debt-row__hit"
+                  onClick={() => onEdit(d)}
+                  aria-label={`Edit debt with ${d.personName}`}
+                />
+
                 <div className="debt-row__actions">
                   <button
                     className="icon-btn debt-row__settle"
@@ -570,14 +598,14 @@ function DebtSection({
                     <Check size={16} />
                   </button>
                   <button
-                    className="icon-btn"
+                    className="icon-btn debt-row__edit"
                     onClick={() => onEdit(d)}
                     aria-label="Edit"
                   >
                     <Pencil size={15} />
                   </button>
                   <button
-                    className="icon-btn icon-btn--danger"
+                    className="icon-btn icon-btn--danger debt-row__delete"
                     onClick={() => onDelete(d)}
                     aria-label="Delete"
                   >

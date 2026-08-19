@@ -1,18 +1,20 @@
-import { useEffect, useRef } from "react";
+import { lazy, useEffect, useRef } from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { api } from "../../../convex/_generated/api";
 import AppShell from "../layout/AppShell";
 import SplashScreen from "../ui/SplashScreen";
-import OnboardingPage from "../../pages/OnboardingPage";
 import DashboardPage from "../../pages/DashboardPage";
-import TransactionsPage from "../../pages/TransactionsPage";
-import BudgetPage from "../../pages/BudgetPage";
-import GoalsPage from "../../pages/GoalsPage";
-import DebtsPage from "../../pages/DebtsPage";
-import CategoriesPage from "../../pages/CategoriesPage";
-import AnalyticsPage from "../../pages/AnalyticsPage";
-import SettingsPage from "../../pages/SettingsPage";
+
+// The dashboard ships in the main bundle; everything else loads on demand.
+const OnboardingPage = lazy(() => import("../../pages/OnboardingPage"));
+const TransactionsPage = lazy(() => import("../../pages/TransactionsPage"));
+const BudgetPage = lazy(() => import("../../pages/BudgetPage"));
+const GoalsPage = lazy(() => import("../../pages/GoalsPage"));
+const DebtsPage = lazy(() => import("../../pages/DebtsPage"));
+const CategoriesPage = lazy(() => import("../../pages/CategoriesPage"));
+const AnalyticsPage = lazy(() => import("../../pages/AnalyticsPage"));
+const SettingsPage = lazy(() => import("../../pages/SettingsPage"));
 
 export default function AuthenticatedApp() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();

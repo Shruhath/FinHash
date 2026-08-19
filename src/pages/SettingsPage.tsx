@@ -202,10 +202,10 @@ export default function SettingsPage() {
 
           <button
             type="submit"
-            className="btn btn--accent"
+            className={`btn ${dirty ? "btn--accent" : "btn--secondary"}`}
             disabled={saving || !dirty || !name.trim()}
           >
-            {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
+            {saving ? "Saving…" : dirty ? "Save changes" : "No changes"}
           </button>
         </form>
       </motion.section>

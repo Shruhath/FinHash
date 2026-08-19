@@ -47,3 +47,7 @@ convex_firebase_setup_guide.md
 *.csv
 *.xlsx
 *.xls
+
+# local UI preview harness
+preview/
+vite.preview.config.ts

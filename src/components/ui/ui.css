@@ -284,17 +284,25 @@
   background-color: var(--color-bg-secondary);
 }
 
+.sheet__handle {
+  display: grid;
+  place-items: center;
+  padding: 10px 0 2px;
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
 .sheet__grabber {
   width: 40px;
   height: 4px;
   border-radius: var(--radius-full);
   background-color: var(--color-border-strong);
-  margin: 10px auto 2px;
-  flex-shrink: 0;
 }
 
 .sheet__header {
   display: flex;
+  touch-action: none;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-md);
@@ -380,8 +388,10 @@
 .progress-ring__center {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   line-height: 1.15;
 }

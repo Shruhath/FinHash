@@ -11,7 +11,6 @@ import {
   HandCoins,
   PiggyBank,
   Receipt,
-  Sparkles,
   Target,
   Wallet,
 } from "lucide-react";
@@ -164,10 +163,6 @@ export default function DashboardPage() {
             {user?.name?.split(" ")[0] ?? "there"}
           </h1>
         </div>
-        <button className="btn btn--accent dash__add" onClick={() => openAdd()}>
-          <Sparkles size={16} />
-          Add transaction
-        </button>
       </motion.header>
 
       {/* ---------- Period controls ---------- */}
@@ -244,31 +239,31 @@ export default function DashboardPage() {
 
           <div className="balance-card__split">
             <div className="balance-stat">
-              <span className="balance-stat__icon balance-stat__icon--in">
-                <ArrowDownLeft size={15} />
+              <span className="balance-stat__head">
+                <span className="balance-stat__icon balance-stat__icon--in">
+                  <ArrowDownLeft size={13} />
+                </span>
+                Income
               </span>
-              <div>
-                <span className="balance-stat__label">Income</span>
-                <AnimatedNumber
-                  className="balance-stat__value money"
-                  value={summary?.totalIncome ?? 0}
-                  format={(v) => format(v)}
-                />
-              </div>
+              <AnimatedNumber
+                className="balance-stat__value money"
+                value={summary?.totalIncome ?? 0}
+                format={(v) => format(v)}
+              />
             </div>
 
             <div className="balance-stat">
-              <span className="balance-stat__icon balance-stat__icon--out">
-                <ArrowUpRight size={15} />
+              <span className="balance-stat__head">
+                <span className="balance-stat__icon balance-stat__icon--out">
+                  <ArrowUpRight size={13} />
+                </span>
+                Expenses
               </span>
-              <div>
-                <span className="balance-stat__label">Expenses</span>
-                <AnimatedNumber
-                  className="balance-stat__value money"
-                  value={summary?.totalExpense ?? 0}
-                  format={(v) => format(v)}
-                />
-              </div>
+              <AnimatedNumber
+                className="balance-stat__value money"
+                value={summary?.totalExpense ?? 0}
+                format={(v) => format(v)}
+              />
             </div>
           </div>
 

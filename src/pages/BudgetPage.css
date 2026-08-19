@@ -79,6 +79,11 @@
   color: var(--color-text-primary);
 }
 
+.budget-fact__hint {
+  font-size: var(--text-2xs);
+  color: var(--color-text-faint);
+}
+
 @media (max-width: 640px) {
   .budget-overview {
     flex-direction: column;

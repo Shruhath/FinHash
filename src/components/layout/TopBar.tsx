@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, WifiOff } from "lucide-react";
 import { LogoMark } from "../ui/Logo";
 import { PAGE_TITLES, TAB_ROUTES } from "./navItems";
@@ -50,16 +50,23 @@ export default function TopBar({ onOpenMore }: Props) {
           </button>
         )}
 
-        {!isTab && title && (
-          <motion.h1
-            key={title}
-            className="topbar__title"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {title}
-          </motion.h1>
+        {!isTab && (
+          <div className="topbar__title-slot">
+            <AnimatePresence>
+              {scrolled && title && (
+                <motion.h1
+                  key={title}
+                  className="topbar__title"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {title}
+                </motion.h1>
+              )}
+            </AnimatePresence>
+          </div>
         )}
 
         <div className="topbar__right">

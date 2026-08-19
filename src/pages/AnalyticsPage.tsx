@@ -5,7 +5,7 @@ import {
   Area,
   AreaChart,
   Bar,
-  BarChart,
+  ComposedChart,
   CartesianGrid,
   Cell,
   Line,
@@ -224,7 +224,7 @@ export default function AnalyticsPage() {
         </div>
 
         <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
-          <BarChart
+          <ComposedChart
             data={monthlyTrend}
             margin={{ top: 8, right: 4, bottom: 0, left: -12 }}
           >
@@ -238,7 +238,7 @@ export default function AnalyticsPage() {
               {...axisProps}
               axisLine={false}
               tickFormatter={(v: number) => compact(v)}
-              width={54}
+              width={62}
             />
             <Tooltip
               content={
@@ -265,7 +265,7 @@ export default function AnalyticsPage() {
               strokeWidth={2.5}
               dot={false}
             />
-          </BarChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </motion.section>
 
@@ -301,7 +301,7 @@ export default function AnalyticsPage() {
                 {...axisProps}
                 axisLine={false}
                 tickFormatter={(v: number) => compact(v)}
-                width={54}
+                width={62}
               />
               <Tooltip
                 content={

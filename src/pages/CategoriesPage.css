@@ -32,9 +32,8 @@
 
 .cat-card__text {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
+  align-items: center;
+  gap: var(--space-sm);
   flex: 1;
   min-width: 0;
 }

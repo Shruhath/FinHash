@@ -27,9 +27,6 @@
 }
 
 @media (max-width: 860px) {
-  .dash__add {
-    display: none; /* the tab-bar FAB owns this action on mobile */
-  }
   .dash__greet-name {
     font-size: var(--text-xl);
   }
@@ -147,10 +144,16 @@
   position: relative;
 }
 
+@media (min-width: 861px) {
+  .balance-card__split {
+    grid-template-columns: repeat(2, minmax(0, 260px));
+  }
+}
+
 .balance-stat {
   display: flex;
-  align-items: center;
-  gap: var(--space-sm);
+  flex-direction: column;
+  gap: 5px;
   padding: var(--space-md);
   border-radius: var(--radius-md);
   background-color: rgba(255, 255, 255, 0.035);
@@ -162,18 +165,23 @@
   background-color: rgba(20, 16, 12, 0.025);
 }
 
-.balance-stat > div {
+.balance-stat__head {
   display: flex;
-  flex-direction: column;
-  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
 }
 
 .balance-stat__icon {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
   flex-shrink: 0;
 }
 
@@ -187,16 +195,8 @@
   color: var(--color-danger);
 }
 
-.balance-stat__label {
-  font-size: var(--text-2xs);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
 .balance-stat__value {
-  font-size: var(--text-md);
+  font-size: var(--text-lg);
   font-weight: 700;
   color: var(--color-text-primary);
   white-space: nowrap;

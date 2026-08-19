@@ -386,8 +386,14 @@
     margin-left: -8px;
   }
 
-  .topbar__title {
+  .topbar__title-slot {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .topbar__title {
     font-size: var(--text-lg);
     font-weight: 700;
     letter-spacing: -0.03em;

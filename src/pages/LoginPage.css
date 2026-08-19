@@ -146,7 +146,7 @@
   height: 34px;
   border-radius: var(--radius-sm);
   background-color: var(--color-accent-soft);
-  color: var(--color-accent);
+  color: var(--orange-300);
   flex-shrink: 0;
 }
 

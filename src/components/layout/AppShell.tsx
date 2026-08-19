@@ -1,5 +1,6 @@
 import {
   createContext,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -15,6 +16,7 @@ import MoreSheet from "./MoreSheet";
 import AddTransactionSheet from "../transactions/AddTransactionSheet";
 import InstallPrompt from "../pwa/InstallPrompt";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { SkeletonCard } from "../ui/Skeleton";
 import { pageVariants } from "../../lib/motion";
 import "./shell.css";
 
@@ -93,7 +95,9 @@ export default function AppShell() {
               animate="animate"
               exit="exit"
             >
-              <Outlet />
+              <Suspense fallback={<PageFallback />}>
+                <Outlet />
+              </Suspense>
             </motion.div>
           </AnimatePresence>
         </main>
@@ -115,5 +119,15 @@ export default function AppShell() {
         <InstallPrompt />
       </div>
     </ShellContext.Provider>
+  );
+}
+
+/** Holds the layout steady while a lazily-loaded page arrives. */
+function PageFallback() {
+  return (
+    <div className="page">
+      <SkeletonCard lines={3} height={180} />
+      <SkeletonCard lines={4} />
+    </div>
   );
 }
