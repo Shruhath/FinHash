@@ -355,6 +355,11 @@
     display: none;
   }
 
+  /* Taps anywhere on the row must reach the hit layer beneath the content */
+  .tx-row > *:not(.tx-row__hit) {
+    pointer-events: none;
+  }
+
   .tx-totals__value {
     font-size: var(--text-sm);
   }

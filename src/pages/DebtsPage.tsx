@@ -144,6 +144,17 @@ export default function DebtsPage() {
     }
   };
 
+  const reopen = async (id: Id<"debts">) => {
+    try {
+      await undoComplete({ id });
+      haptic("light");
+      toast.success("Debt reopened");
+    } catch {
+      haptic("error");
+      toast.error("Couldn't reopen that debt");
+    }
+  };
+
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     const id = pendingDelete._id;
@@ -314,10 +325,7 @@ export default function DebtsPage() {
                         <div className="debt-row__actions">
                           <button
                             className="icon-btn"
-                            onClick={async () => {
-                              await undoComplete({ id: d._id });
-                              toast.success("Debt reopened");
-                            }}
+                            onClick={() => reopen(d._id)}
                             aria-label="Reopen"
                           >
                             <Undo2 size={15} />

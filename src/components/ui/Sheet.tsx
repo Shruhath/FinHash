@@ -49,6 +49,11 @@ export default function Sheet({
   const dragControls = useDragControls();
   const titleId = useId();
 
+  // Callers pass inline arrows, so keep the effect below off `onClose`'s
+  // identity — otherwise it would tear down and re-run on every parent render.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   // Lock the page behind the sheet without losing scroll position.
   useEffect(() => {
     if (!open) return;
@@ -75,7 +80,7 @@ export default function Sheet({
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && dismissible) {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab") return;
@@ -104,7 +109,7 @@ export default function Sheet({
       window.clearTimeout(timer);
       opener?.focus?.({ preventScroll: true });
     };
-  }, [open, onClose, dismissible]);
+  }, [open, dismissible]);
 
   const handleClose = () => {
     haptic("light");

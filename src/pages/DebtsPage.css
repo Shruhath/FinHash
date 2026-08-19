@@ -250,6 +250,11 @@
   .debt-row__delete {
     display: none;
   }
+
+  /* Taps fall through to the hit layer, except on the settle button */
+  .debt-row > *:not(.debt-row__hit):not(.debt-row__actions) {
+    pointer-events: none;
+  }
 }
 
 /* ---------- Settle sheet ---------- */
