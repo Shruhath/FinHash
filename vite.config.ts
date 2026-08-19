@@ -116,6 +116,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ["react", "react-dom", "react-router-dom"],
+          convex: ["convex/react", "convex/server"],
           charts: ["recharts"],
           motion: ["framer-motion"],
           firebase: ["firebase/app", "firebase/auth"],

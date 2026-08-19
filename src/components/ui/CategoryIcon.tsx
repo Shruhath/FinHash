@@ -1,5 +1,4 @@
-import * as Icons from "lucide-react";
-import { HelpCircle } from "lucide-react";
+import { resolveCategoryIcon } from "../../lib/categoryIcons";
 
 interface Props {
   name?: string;
@@ -18,11 +17,8 @@ export default function CategoryIcon({
   tile = true,
   tileSize = 40,
 }: Props) {
-  const Resolved =
-    (name && (Icons as unknown as Record<string, Icons.LucideIcon>)[name]) ||
-    HelpCircle;
-
-  const glyph = <Resolved size={size} strokeWidth={2} />;
+  const Glyph = resolveCategoryIcon(name);
+  const glyph = <Glyph size={size} strokeWidth={2} />;
 
   if (!tile) return <span style={{ color, display: "flex" }}>{glyph}</span>;
 

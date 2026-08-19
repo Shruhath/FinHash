@@ -545,3 +545,41 @@
   color: var(--color-accent);
   gap: 7px;
 }
+
+/* ---------- Crash screen ---------- */
+.crash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  min-height: 100dvh;
+  padding: var(--space-xl);
+  text-align: center;
+  background-color: var(--color-bg-primary);
+}
+
+.crash__icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-xl);
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.crash__title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-text-primary);
+}
+
+.crash__text {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  max-width: 40ch;
+  line-height: 1.55;
+  margin-bottom: var(--space-sm);
+}

@@ -1,5 +1,5 @@
-import { LayoutGroup, motion } from "framer-motion";
 import { useId } from "react";
+import { motion } from "framer-motion";
 import { haptic } from "../../lib/haptics";
 import { springSnappy } from "../../lib/motion";
 
@@ -25,40 +25,40 @@ export default function SegmentedControl<T extends string>({
   fluid = false,
   size = "md",
 }: Props<T>) {
-  const groupId = useId();
+  // Unique per instance — a shared layoutId makes separate controls animate
+  // into one another when more than one is mounted at a time.
+  const pillId = `segmented-pill-${useId()}`;
 
   return (
-    <LayoutGroup id={groupId}>
-      <div
-        className={`segmented segmented--${size} ${fluid ? "segmented--fluid" : ""}`}
-        role="tablist"
-      >
-        {segments.map((segment) => {
-          const active = segment.value === value;
-          return (
-            <button
-              key={segment.value}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              className={`segmented__item ${active ? "segmented__item--active" : ""}`}
-              onClick={() => {
-                if (!active) haptic("light");
-                onChange(segment.value);
-              }}
-            >
-              {active && (
-                <motion.span
-                  layoutId="segmented-pill"
-                  className="segmented__pill"
-                  transition={springSnappy}
-                />
-              )}
-              <span className="segmented__label">{segment.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </LayoutGroup>
+    <div
+      className={`segmented segmented--${size} ${fluid ? "segmented--fluid" : ""}`}
+      role="tablist"
+    >
+      {segments.map((segment) => {
+        const active = segment.value === value;
+        return (
+          <button
+            key={segment.value}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            className={`segmented__item ${active ? "segmented__item--active" : ""}`}
+            onClick={() => {
+              if (!active) haptic("light");
+              onChange(segment.value);
+            }}
+          >
+            {active && (
+              <motion.span
+                layoutId={pillId}
+                className="segmented__pill"
+                transition={springSnappy}
+              />
+            )}
+            <span className="segmented__label">{segment.label}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

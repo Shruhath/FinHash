@@ -66,8 +66,31 @@ export default function AppShell() {
     }
   }, [location.search, location.pathname]);
 
+  // Desktop keyboard shortcut: "n" starts a new transaction.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "n" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        (el.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))
+      )
+        return;
+      e.preventDefault();
+      setAddOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const openAdd = useCallback((preset?: AddPreset) => {
-    setAddPreset(preset);
+    // Guard against a handler passing its click event straight through.
+    const safe =
+      preset && !(preset instanceof Event) && !("nativeEvent" in preset)
+        ? preset
+        : undefined;
+    setAddPreset(safe);
     setAddOpen(true);
   }, []);
   const contextValue = useMemo(() => ({ openAdd }), [openAdd]);

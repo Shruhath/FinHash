@@ -46,7 +46,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, onAdd }: Props) {
         </button>
       </div>
 
-      <button className="sidebar__add" onClick={onAdd}>
+      <button className="sidebar__add" onClick={() => onAdd()}>
         <Plus size={18} strokeWidth={2.6} />
         {!collapsed && <span>Add transaction</span>}
       </button>

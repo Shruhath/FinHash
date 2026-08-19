@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
@@ -14,7 +14,6 @@ import {
   Target,
   Wallet,
 } from "lucide-react";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { api } from "../../convex/_generated/api";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { useCurrency } from "../hooks/useCurrency";
@@ -25,8 +24,10 @@ import AnimatedNumber from "../components/ui/AnimatedNumber";
 import ProgressBar from "../components/ui/ProgressBar";
 import EmptyState from "../components/ui/EmptyState";
 import CategoryIcon from "../components/ui/CategoryIcon";
-import { SkeletonCard, SkeletonList } from "../components/ui/Skeleton";
-import ChartTooltip from "../components/ui/ChartTooltip";
+import { Skeleton, SkeletonCard, SkeletonList } from "../components/ui/Skeleton";
+
+// Charts pull in recharts, which has no business blocking the first paint.
+const CategoryDonut = lazy(() => import("../components/charts/CategoryDonut"));
 import {
   MONTH_NAMES,
   MONTH_SHORT,
@@ -358,28 +359,19 @@ export default function DashboardPage() {
           ) : (
             <div className="donut">
               <div className="donut__chart">
-                <ResponsiveContainer width="100%" height={188}>
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={62}
-                      outerRadius={88}
-                      paddingAngle={2.5}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={index} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={<ChartTooltip formatValue={format} />}
-                      cursor={false}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <Suspense
+                  fallback={
+                    <div className="donut__placeholder">
+                      <Skeleton
+                        width={176}
+                        height={176}
+                        radius="var(--radius-full)"
+                      />
+                    </div>
+                  }
+                >
+                  <CategoryDonut data={chartData} formatValue={format} />
+                </Suspense>
                 <div className="donut__center">
                   <span className="donut__center-label">Total</span>
                   <span className="donut__center-value money">

@@ -290,6 +290,12 @@
   position: relative;
 }
 
+.donut__placeholder {
+  display: grid;
+  place-items: center;
+  height: 188px;
+}
+
 .donut__center {
   position: absolute;
   inset: 0;

@@ -12,22 +12,12 @@ import EmptyState from "../components/ui/EmptyState";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import CategoryIcon from "../components/ui/CategoryIcon";
 import { SkeletonList } from "../components/ui/Skeleton";
+import { ICON_CHOICES } from "../lib/categoryIcons";
 import { listItemVariants, listVariants } from "../lib/motion";
 import { haptic } from "../lib/haptics";
 import "./CategoriesPage.css";
 
 type Category = Doc<"categories">;
-
-/** Curated lucide names — kept in sync with what the seed data uses. */
-const ICON_CHOICES = [
-  "Utensils", "Coffee", "ShoppingCart", "ShoppingBag", "Home", "Car",
-  "Bus", "Plane", "Fuel", "Zap", "Wifi", "Smartphone",
-  "Tv", "Music", "Gamepad2", "Film", "Book", "GraduationCap",
-  "Heart", "Stethoscope", "Dumbbell", "Scissors", "Shirt", "Watch",
-  "Sparkles", "Gift", "PawPrint", "Baby", "Wrench", "Hammer",
-  "CreditCard", "Landmark", "PiggyBank", "TrendingUp", "Briefcase", "Laptop",
-  "Building2", "Receipt", "RotateCcw", "Smile", "MoreHorizontal",
-];
 
 const COLOR_CHOICES = [
   "#cc5500", "#f5782a", "#f0a020", "#eab308", "#84cc16", "#22c55e",
