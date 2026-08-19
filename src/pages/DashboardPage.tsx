@@ -1,448 +1,712 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "convex/react";
+import { motion } from "framer-motion";
+import {
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowRight,
+  CalendarClock,
+  ChartNoAxesCombined,
+  HandCoins,
+  PiggyBank,
+  Receipt,
+  Sparkles,
+  Target,
+  Wallet,
+} from "lucide-react";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { api } from "../../convex/_generated/api";
 import { useCurrentUser } from "../hooks/useCurrentUser";
-import { getCurrencyByCountry } from "../lib/countries";
-import DashboardLayout from "../components/dashboard/DashboardLayout";
-import AddTransactionModal from "../components/transactions/AddTransactionModal";
+import { useCurrency } from "../hooks/useCurrency";
+import { useShell } from "../components/layout/AppShell";
+import SegmentedControl from "../components/ui/SegmentedControl";
+import PeriodStepper from "../components/ui/PeriodStepper";
+import AnimatedNumber from "../components/ui/AnimatedNumber";
+import ProgressBar from "../components/ui/ProgressBar";
+import EmptyState from "../components/ui/EmptyState";
+import CategoryIcon from "../components/ui/CategoryIcon";
+import { SkeletonCard, SkeletonList } from "../components/ui/Skeleton";
+import ChartTooltip from "../components/ui/ChartTooltip";
 import {
-  TrendingUp,
-  TrendingDown,
-  Scale,
-  Receipt,
-  CalendarClock,
-  PiggyBank,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+  MONTH_NAMES,
+  MONTH_SHORT,
+  formatShortDate,
+  monthKey,
+} from "../lib/format";
+import { listItemVariants, listVariants, riseVariants } from "../lib/motion";
 import "./DashboardPage.css";
 
 type ViewMode = "monthly" | "yearly" | "alltime";
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 5) return "Still up";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
 
 export default function DashboardPage() {
   const user = useCurrentUser();
-  const [view, setView] = useState<ViewMode>("monthly");
-  const [showAddModal, setShowAddModal] = useState(false);
+  const { format, compact } = useCurrency();
+  const { openAdd } = useShell();
 
   const now = new Date();
+  const [view, setView] = useState<ViewMode>("monthly");
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-
-  const currencySymbol = user
-    ? getCurrencyByCountry(user.country).symbol
-    : "$";
 
   const monthlySummary = useQuery(
     api.transactions.getMonthlySummary,
     view === "monthly" ? { month: selectedMonth, year: selectedYear } : "skip"
   );
-
   const yearlySummary = useQuery(
     api.transactions.getYearlySummary,
     view === "yearly" ? { year: selectedYear } : "skip"
   );
-
   const allTimeSummary = useQuery(
     api.transactions.getAllTimeSummary,
     view === "alltime" ? {} : "skip"
   );
 
   const recentTransactions = useQuery(api.transactions.getRecentTransactions, {
-    limit: 8,
+    limit: 6,
   });
-
   const categories = useQuery(api.categories.getCategories) ?? [];
+  const budgets =
+    useQuery(api.budgets.getBudgetsWithSpending, {
+      month: monthKey(selectedYear, selectedMonth),
+    }) ?? [];
+  const goals = useQuery(api.savings_goals.getGoalsWithProgress) ?? [];
+  const debts = useQuery(api.debts.getDebts) ?? [];
 
-  const getCategoryName = (catId: string) =>
-    categories.find((c) => c._id === catId)?.name ?? "Unknown";
+  const categoryById = useMemo(
+    () => new Map(categories.map((c) => [c._id as string, c])),
+    [categories]
+  );
 
-  const getCategoryColor = (catId: string) =>
-    categories.find((c) => c._id === catId)?.color ?? "#71717a";
-
-  const formatCurrency = (amount: number) =>
-    `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-  const formatDate = (timestamp: number) => {
-    const d = new Date(timestamp);
-    return d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  // Get the active summary based on view
-  const activeSummary =
+  const summary =
     view === "monthly"
       ? monthlySummary
       : view === "yearly"
         ? yearlySummary
         : allTimeSummary;
 
-  // Prepare category chart data
-  const categorySpending = activeSummary?.categorySpending ?? {};
-  const chartData = Object.entries(categorySpending)
-    .map(([catId, amount]) => ({
-      name: getCategoryName(catId),
-      value: amount,
-      color: getCategoryColor(catId),
-    }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 8);
+  const loading = summary === undefined;
 
-  // Navigation helpers
-  const goToPrevMonth = () => {
-    if (selectedMonth === 0) {
-      setSelectedMonth(11);
-      setSelectedYear(selectedYear - 1);
-    } else {
-      setSelectedMonth(selectedMonth - 1);
-    }
+  const chartData = useMemo(() => {
+    const spending = summary?.categorySpending ?? {};
+    return Object.entries(spending)
+      .map(([catId, amount]) => {
+        const cat = categoryById.get(catId);
+        return {
+          name: cat?.name ?? "Uncategorised",
+          icon: cat?.icon,
+          value: amount as number,
+          color: cat?.color ?? "#71717a",
+        };
+      })
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [summary, categoryById]);
+
+  const chartTotal = chartData.reduce((s, d) => s + d.value, 0);
+
+  const topBudgets = useMemo(
+    () => [...budgets].sort((a, b) => b.percentage - a.percentage).slice(0, 3),
+    [budgets]
+  );
+
+  const activeGoals = goals.filter((g) => !g.isCompleted);
+  const openDebts = debts.filter((d) => !d.isCompleted);
+  const netDebt = openDebts.reduce(
+    (sum, d) => sum + (d.type === "lent" ? d.amount : -d.amount),
+    0
+  );
+
+  const isCurrentMonth =
+    selectedMonth === now.getMonth() && selectedYear === now.getFullYear();
+
+  const periodLabel =
+    view === "monthly"
+      ? `${MONTH_NAMES[selectedMonth]} ${selectedYear}`
+      : view === "yearly"
+        ? String(selectedYear)
+        : "All time";
+
+  const stepMonth = (delta: number) => {
+    const next = new Date(selectedYear, selectedMonth + delta, 1);
+    setSelectedMonth(next.getMonth());
+    setSelectedYear(next.getFullYear());
   };
 
-  const goToNextMonth = () => {
-    if (selectedMonth === 11) {
-      setSelectedMonth(0);
-      setSelectedYear(selectedYear + 1);
-    } else {
-      setSelectedMonth(selectedMonth + 1);
-    }
+  const resetPeriod = () => {
+    setSelectedMonth(now.getMonth());
+    setSelectedYear(now.getFullYear());
   };
 
-  // Yearly grid for yearly view
-  const yearlyMonths = view === "yearly" ? (yearlySummary?.months ?? []) : [];
+  const balance = summary?.balance ?? 0;
+  const positive = balance >= 0;
 
   return (
-    <DashboardLayout>
-      <div className="dashboard">
-        {/* Header */}
-        <div className="dashboard__header">
-          <div>
-            <h1 className="dashboard__greeting">
-              Welcome back, {user?.name?.split(" ")[0]}
-            </h1>
-            <p className="dashboard__subtitle">
-              Here's your financial overview
-            </p>
-          </div>
-          <button
-            className="dashboard__add-btn"
-            onClick={() => setShowAddModal(true)}
-          >
-            <Plus size={20} />
-            <span>Add Transaction</span>
-          </button>
+    <div className="page dash">
+      {/* ---------- Greeting ---------- */}
+      <motion.header
+        className="dash__greet"
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div>
+          <p className="dash__greet-label">{greeting()},</p>
+          <h1 className="dash__greet-name">
+            {user?.name?.split(" ")[0] ?? "there"}
+          </h1>
         </div>
+        <button className="btn btn--accent dash__add" onClick={() => openAdd()}>
+          <Sparkles size={16} />
+          Add transaction
+        </button>
+      </motion.header>
 
-        {/* View Toggle */}
-        <div className="view-tabs">
-          <button
-            className={`view-tabs__btn ${view === "monthly" ? "view-tabs__btn--active" : ""}`}
-            onClick={() => setView("monthly")}
-          >
-            Monthly
-          </button>
-          <button
-            className={`view-tabs__btn ${view === "yearly" ? "view-tabs__btn--active" : ""}`}
-            onClick={() => setView("yearly")}
-          >
-            Yearly
-          </button>
-          <button
-            className={`view-tabs__btn ${view === "alltime" ? "view-tabs__btn--active" : ""}`}
-            onClick={() => setView("alltime")}
-          >
-            All Time
-          </button>
-        </div>
+      {/* ---------- Period controls ---------- */}
+      <div className="dash__controls">
+        <SegmentedControl
+          segments={[
+            { value: "monthly", label: "Month" },
+            { value: "yearly", label: "Year" },
+            { value: "alltime", label: "All time" },
+          ]}
+          value={view}
+          onChange={setView}
+        />
 
-        {/* Period Selector */}
         {view === "monthly" && (
-          <div className="period-selector">
-            <button className="period-selector__btn" onClick={goToPrevMonth}>
-              <ChevronLeft size={18} />
-            </button>
-            <span className="period-selector__label">
-              {MONTH_NAMES[selectedMonth]} {selectedYear}
-            </span>
-            <button className="period-selector__btn" onClick={goToNextMonth}>
-              <ChevronRight size={18} />
-            </button>
-          </div>
+          <PeriodStepper
+            label={`${MONTH_SHORT[selectedMonth]} ${selectedYear}`}
+            onPrev={() => stepMonth(-1)}
+            onNext={() => stepMonth(1)}
+            nextDisabled={isCurrentMonth}
+            onReset={!isCurrentMonth ? resetPeriod : undefined}
+          />
         )}
 
         {view === "yearly" && (
-          <div className="period-selector">
-            <button
-              className="period-selector__btn"
-              onClick={() => setSelectedYear(selectedYear - 1)}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <span className="period-selector__label">{selectedYear}</span>
-            <button
-              className="period-selector__btn"
-              onClick={() => setSelectedYear(selectedYear + 1)}
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
+          <PeriodStepper
+            label={String(selectedYear)}
+            onPrev={() => setSelectedYear((y) => y - 1)}
+            onNext={() => setSelectedYear((y) => y + 1)}
+            nextDisabled={selectedYear >= now.getFullYear()}
+            onReset={
+              selectedYear !== now.getFullYear()
+                ? () => setSelectedYear(now.getFullYear())
+                : undefined
+            }
+          />
         )}
+      </div>
 
-        {view === "alltime" && allTimeSummary?.firstTransactionDate && (
-          <p className="alltime-since">
-            Since{" "}
-            {new Date(allTimeSummary.firstTransactionDate).toLocaleDateString(
-              undefined,
-              { month: "long", year: "numeric" }
+      {/* ---------- Balance hero ---------- */}
+      {loading ? (
+        <SkeletonCard lines={3} height={220} />
+      ) : (
+        <motion.section
+          className="balance-card"
+          variants={riseVariants}
+          initial="initial"
+          animate="animate"
+        >
+          <div className="balance-card__glow" aria-hidden />
+
+          <div className="balance-card__top">
+            <span className="balance-card__label">
+              Net balance · {periodLabel}
+            </span>
+            {view === "alltime" && allTimeSummary?.firstTransactionDate && (
+              <span className="balance-card__since">
+                since{" "}
+                {new Date(
+                  allTimeSummary.firstTransactionDate
+                ).toLocaleDateString(undefined, {
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
             )}
-          </p>
-        )}
+          </div>
 
-        {/* Top Metric Cards */}
-        {activeSummary && (
-          <>
-            <div className="metric-cards">
-              <div className="metric-card metric-card--income">
-                <div className="metric-card__icon">
-                  <TrendingUp size={20} />
-                </div>
-                <div className="metric-card__content">
-                  <span className="metric-card__label">Income</span>
-                  <span className="metric-card__value">
-                    {formatCurrency(activeSummary.totalIncome)}
-                  </span>
-                </div>
-              </div>
+          <AnimatedNumber
+            className={`balance-card__value money ${positive ? "" : "balance-card__value--negative"}`}
+            value={balance}
+            format={(v) => format(v)}
+          />
 
-              <div className="metric-card metric-card--expense">
-                <div className="metric-card__icon">
-                  <TrendingDown size={20} />
-                </div>
-                <div className="metric-card__content">
-                  <span className="metric-card__label">Expenses</span>
-                  <span className="metric-card__value">
-                    {formatCurrency(activeSummary.totalExpense)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="metric-card metric-card--balance">
-                <div className="metric-card__icon">
-                  <Scale size={20} />
-                </div>
-                <div className="metric-card__content">
-                  <span className="metric-card__label">Balance</span>
-                  <span className="metric-card__value">
-                    {formatCurrency(activeSummary.balance)}
-                  </span>
-                </div>
+          <div className="balance-card__split">
+            <div className="balance-stat">
+              <span className="balance-stat__icon balance-stat__icon--in">
+                <ArrowDownLeft size={15} />
+              </span>
+              <div>
+                <span className="balance-stat__label">Income</span>
+                <AnimatedNumber
+                  className="balance-stat__value money"
+                  value={summary?.totalIncome ?? 0}
+                  format={(v) => format(v)}
+                />
               </div>
             </div>
 
-            {/* Summary Cards */}
-            <div className="summary-cards">
-              <div className="summary-card">
-                <Receipt size={18} className="summary-card__icon" />
-                <span className="summary-card__value">
-                  {activeSummary.transactionCount}
-                </span>
-                <span className="summary-card__label">Transactions</span>
-              </div>
-
-              {view === "monthly" && monthlySummary && (
-                <div className="summary-card">
-                  <CalendarClock size={18} className="summary-card__icon" />
-                  <span className="summary-card__value">
-                    {formatCurrency(monthlySummary.avgDailySpend)}
-                  </span>
-                  <span className="summary-card__label">Avg Daily Spend</span>
-                </div>
-              )}
-
-              <div className="summary-card">
-                <PiggyBank size={18} className="summary-card__icon" />
-                <span className="summary-card__value">
-                  {activeSummary.savingsRate.toFixed(1)}%
-                </span>
-                <span className="summary-card__label">Savings Rate</span>
+            <div className="balance-stat">
+              <span className="balance-stat__icon balance-stat__icon--out">
+                <ArrowUpRight size={15} />
+              </span>
+              <div>
+                <span className="balance-stat__label">Expenses</span>
+                <AnimatedNumber
+                  className="balance-stat__value money"
+                  value={summary?.totalExpense ?? 0}
+                  format={(v) => format(v)}
+                />
               </div>
             </div>
-          </>
-        )}
+          </div>
 
-        {/* Content Grid: Chart + Recent Transactions */}
-        <div className="dashboard__grid">
-          {/* Category Chart */}
-          {chartData.length > 0 && (
-            <div className="dashboard__card">
-              <h3 className="dashboard__card-title">
-                Top Spending Categories
-              </h3>
-              <div className="chart-container">
-                <ResponsiveContainer width="100%" height={220}>
+          {(summary?.totalIncome ?? 0) > 0 && (
+            <div className="balance-card__meter">
+              <div className="balance-card__meter-head">
+                <span>Savings rate</span>
+                <span className="money">
+                  {(summary?.savingsRate ?? 0).toFixed(1)}%
+                </span>
+              </div>
+              <ProgressBar
+                value={Math.max(0, summary?.savingsRate ?? 0)}
+                tone={
+                  (summary?.savingsRate ?? 0) >= 20
+                    ? "safe"
+                    : (summary?.savingsRate ?? 0) >= 0
+                      ? "warning"
+                      : "danger"
+                }
+                height={6}
+                delay={0.2}
+              />
+            </div>
+          )}
+        </motion.section>
+      )}
+
+      {/* ---------- Stat strip ---------- */}
+      {!loading && summary && (
+        <motion.div
+          className="stat-strip"
+          variants={listVariants}
+          initial="initial"
+          animate="animate"
+        >
+          <StatTile
+            icon={Receipt}
+            label="Transactions"
+            value={String(summary.transactionCount)}
+          />
+          {view === "monthly" && monthlySummary && (
+            <StatTile
+              icon={CalendarClock}
+              label="Avg / day"
+              value={compact(monthlySummary.avgDailySpend)}
+            />
+          )}
+          <StatTile
+            icon={PiggyBank}
+            label="Saved"
+            value={compact(Math.max(0, summary.balance))}
+          />
+          {activeGoals.length > 0 && (
+            <StatTile
+              icon={Target}
+              label="Goals"
+              value={`${activeGoals.length} active`}
+            />
+          )}
+          {openDebts.length > 0 && (
+            <StatTile
+              icon={HandCoins}
+              label={netDebt >= 0 ? "Owed to you" : "You owe"}
+              value={compact(Math.abs(netDebt))}
+            />
+          )}
+        </motion.div>
+      )}
+
+      {/* ---------- Grid ---------- */}
+      <div className="dash__grid">
+        {/* Spending breakdown */}
+        <section className="card dash__spend">
+          <div className="card__header">
+            <h2 className="card__title">Where it went</h2>
+            {chartData.length > 0 && (
+              <Link to="/analytics" className="link-more">
+                Analytics <ArrowRight size={14} />
+              </Link>
+            )}
+          </div>
+
+          {loading ? (
+            <SkeletonList rows={4} />
+          ) : chartData.length === 0 ? (
+            <EmptyState
+              icon={ChartNoAxesCombined}
+              title="No spending yet"
+              description="Add an expense and your category breakdown will appear here."
+            />
+          ) : (
+            <div className="donut">
+              <div className="donut__chart">
+                <ResponsiveContainer width="100%" height={188}>
                   <PieChart>
                     <Pie
                       data={chartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={55}
-                      outerRadius={90}
-                      paddingAngle={3}
+                      innerRadius={62}
+                      outerRadius={88}
+                      paddingAngle={2.5}
                       dataKey="value"
+                      stroke="none"
                     >
                       {chartData.map((entry, index) => (
                         <Cell key={index} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: "var(--color-bg-elevated)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "var(--radius-sm)",
-                        color: "var(--color-text-primary)",
-                        fontSize: "0.85rem",
-                      }}
-                      itemStyle={{ color: "var(--color-text-primary)" }}
-                      formatter={(value: number) => formatCurrency(value)}
+                      content={<ChartTooltip formatValue={format} />}
+                      cursor={false}
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="chart-legend">
-                  {chartData.map((entry, index) => (
-                    <div className="chart-legend__item" key={index}>
-                      <span
-                        className="chart-legend__dot"
-                        style={{ backgroundColor: entry.color }}
-                      />
-                      <span className="chart-legend__name">{entry.name}</span>
-                      <span className="chart-legend__value">
-                        {formatCurrency(entry.value)}
-                      </span>
-                    </div>
-                  ))}
+                <div className="donut__center">
+                  <span className="donut__center-label">Total</span>
+                  <span className="donut__center-value money">
+                    {compact(chartTotal)}
+                  </span>
                 </div>
               </div>
+
+              <motion.ul
+                className="breakdown"
+                variants={listVariants}
+                initial="initial"
+                animate="animate"
+              >
+                {chartData.map((entry) => (
+                  <motion.li
+                    className="breakdown__row"
+                    key={entry.name}
+                    variants={listItemVariants}
+                  >
+                    <CategoryIcon
+                      name={entry.icon}
+                      color={entry.color}
+                      size={15}
+                      tileSize={30}
+                    />
+                    <span className="breakdown__name truncate">
+                      {entry.name}
+                    </span>
+                    <span className="breakdown__pct money">
+                      {chartTotal > 0
+                        ? ((entry.value / chartTotal) * 100).toFixed(0)
+                        : 0}
+                      %
+                    </span>
+                    <span className="breakdown__value money">
+                      {format(entry.value)}
+                    </span>
+                  </motion.li>
+                ))}
+              </motion.ul>
             </div>
           )}
+        </section>
 
-          {/* Recent Transactions */}
-          <div className="dashboard__card">
-            <h3 className="dashboard__card-title">Recent Activity</h3>
-            {recentTransactions && recentTransactions.length > 0 ? (
-              <div className="recent-list">
-                {recentTransactions.map((tx) => (
-                  <div className="recent-item" key={tx._id}>
-                    <div
-                      className="recent-item__dot"
-                      style={{
-                        backgroundColor: getCategoryColor(tx.categoryId),
-                      }}
+        {/* Recent activity */}
+        <section className="card dash__recent">
+          <div className="card__header">
+            <h2 className="card__title">Recent activity</h2>
+            <Link to="/transactions" className="link-more">
+              See all <ArrowRight size={14} />
+            </Link>
+          </div>
+
+          {recentTransactions === undefined ? (
+            <SkeletonList rows={5} />
+          ) : recentTransactions.length === 0 ? (
+            <EmptyState
+              icon={Receipt}
+              title="Nothing here yet"
+              description="Your latest income and expenses will show up here."
+              action={
+                <button className="btn btn--accent btn--sm" onClick={() => openAdd()}>
+                  Add your first transaction
+                </button>
+              }
+            />
+          ) : (
+            <motion.ul
+              className="tx-mini"
+              variants={listVariants}
+              initial="initial"
+              animate="animate"
+            >
+              {recentTransactions.map((tx) => {
+                const cat = categoryById.get(tx.categoryId);
+                return (
+                  <motion.li
+                    className="tx-mini__row"
+                    key={tx._id}
+                    variants={listItemVariants}
+                  >
+                    <CategoryIcon
+                      name={cat?.icon}
+                      color={cat?.color ?? "#71717a"}
+                      size={16}
+                      tileSize={34}
                     />
-                    <div className="recent-item__info">
-                      <span className="recent-item__category">
-                        {tx.description || getCategoryName(tx.categoryId)}
+                    <div className="tx-mini__text">
+                      <span className="tx-mini__title truncate">
+                        {tx.description || cat?.name || "Transaction"}
                       </span>
-                      <span className="recent-item__date">
-                        {formatDate(tx.date)}
-                        {` · ${getCategoryName(tx.categoryId)}`}
+                      <span className="tx-mini__meta truncate">
+                        {formatShortDate(tx.date)} · {cat?.name ?? "Unknown"}
                       </span>
                     </div>
                     <span
-                      className={`recent-item__amount ${tx.type === "income"
-                        ? "text-income"
-                        : "text-expense"
-                        }`}
+                      className={`tx-mini__amount money ${tx.type === "income" ? "text-income" : ""}`}
                     >
-                      {tx.type === "income" ? "+" : "-"}
-                      {formatCurrency(tx.amount)}
+                      {tx.type === "income" ? "+" : "−"}
+                      {format(tx.amount)}
                     </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="recent-empty">
-                No transactions yet. Add your first one!
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Yearly Grid */}
-        {view === "yearly" && yearlyMonths.length > 0 && (
-          <div className="dashboard__card">
-            <h3 className="dashboard__card-title">Monthly Breakdown</h3>
-            <div className="yearly-grid">
-              {yearlyMonths.map((m, i) => (
-                <div className="yearly-grid__cell" key={i}>
-                  <span className="yearly-grid__month">
-                    {MONTH_NAMES[i]?.slice(0, 3)}
-                  </span>
-                  <span className="yearly-grid__income text-income">
-                    +{formatCurrency(m.income)}
-                  </span>
-                  <span className="yearly-grid__expense text-expense">
-                    -{formatCurrency(m.expense)}
-                  </span>
-                  <span
-                    className={`yearly-grid__balance ${m.balance >= 0 ? "text-income" : "text-expense"
-                      }`}
-                  >
-                    {formatCurrency(m.balance)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* All-Time Yearly History */}
-        {view === "alltime" &&
-          allTimeSummary?.yearlyData &&
-          Object.keys(allTimeSummary.yearlyData).length > 0 && (
-            <div className="dashboard__card">
-              <h3 className="dashboard__card-title">Yearly History</h3>
-              <div className="yearly-grid">
-                {Object.entries(allTimeSummary.yearlyData)
-                  .sort(([a], [b]) => Number(b) - Number(a))
-                  .map(([year, data]) => (
-                    <div className="yearly-grid__cell" key={year}>
-                      <span className="yearly-grid__month">{year}</span>
-                      <span className="yearly-grid__income text-income">
-                        +{formatCurrency(data.income)}
-                      </span>
-                      <span className="yearly-grid__expense text-expense">
-                        -{formatCurrency(data.expense)}
-                      </span>
-                      <span
-                        className={`yearly-grid__balance ${data.balance >= 0 ? "text-income" : "text-expense"
-                          }`}
-                      >
-                        {formatCurrency(data.balance)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
+                  </motion.li>
+                );
+              })}
+            </motion.ul>
           )}
+        </section>
       </div>
 
-      <AddTransactionModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-      />
-    </DashboardLayout>
+      {/* ---------- Budget snapshot ---------- */}
+      {view === "monthly" && topBudgets.length > 0 && (
+        <section className="card">
+          <div className="card__header">
+            <h2 className="card__title">Budget pulse</h2>
+            <Link to="/budget" className="link-more">
+              Manage <ArrowRight size={14} />
+            </Link>
+          </div>
+          <motion.ul
+            className="budget-pulse"
+            variants={listVariants}
+            initial="initial"
+            animate="animate"
+          >
+            {topBudgets.map((b, i) => (
+              <motion.li
+                className="budget-pulse__row"
+                key={b._id}
+                variants={listItemVariants}
+              >
+                <div className="budget-pulse__head">
+                  <span className="budget-pulse__name truncate">
+                    <span
+                      className="dot"
+                      style={{ backgroundColor: b.categoryColor }}
+                    />
+                    {b.categoryName}
+                  </span>
+                  <span className="budget-pulse__figures money">
+                    {format(b.spent)}{" "}
+                    <span className="text-muted">/ {format(b.budgetAmount)}</span>
+                  </span>
+                </div>
+                <ProgressBar
+                  value={b.percentage}
+                  tone={b.status as "safe" | "warning" | "danger" | "exceeded"}
+                  height={6}
+                  delay={0.1 + i * 0.05}
+                />
+              </motion.li>
+            ))}
+          </motion.ul>
+        </section>
+      )}
+
+      {/* ---------- Yearly / all-time breakdown ---------- */}
+      {view === "yearly" && yearlySummary && (
+        <section className="card">
+          <div className="card__header">
+            <h2 className="card__title">Month by month</h2>
+          </div>
+          <div className="period-grid">
+            {yearlySummary.months.map((m, i) => (
+              <PeriodCell
+                key={i}
+                label={MONTH_SHORT[i] ?? ""}
+                income={m.income}
+                expense={m.expense}
+                balance={m.balance}
+                format={format}
+                compact={compact}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {view === "alltime" &&
+        allTimeSummary?.yearlyData &&
+        Object.keys(allTimeSummary.yearlyData).length > 0 && (
+          <section className="card">
+            <div className="card__header">
+              <h2 className="card__title">Year by year</h2>
+            </div>
+            <div className="period-grid">
+              {Object.entries(allTimeSummary.yearlyData)
+                .sort(([a], [b]) => Number(b) - Number(a))
+                .map(([year, data]) => (
+                  <PeriodCell
+                    key={year}
+                    label={year}
+                    income={data.income}
+                    expense={data.expense}
+                    balance={data.balance}
+                    format={format}
+                    compact={compact}
+                  />
+                ))}
+            </div>
+          </section>
+        )}
+
+      {/* ---------- Quick links ---------- */}
+      <div className="quick-links">
+        <QuickLink
+          to="/goals"
+          icon={Target}
+          title="Savings goals"
+          hint={
+            activeGoals.length
+              ? `${activeGoals.length} in progress`
+              : "Set your first goal"
+          }
+        />
+        <QuickLink
+          to="/debts"
+          icon={HandCoins}
+          title="Debts & loans"
+          hint={
+            openDebts.length ? `${openDebts.length} open` : "Nothing outstanding"
+          }
+        />
+        <QuickLink
+          to="/budget"
+          icon={Wallet}
+          title="Budgets"
+          hint={budgets.length ? `${budgets.length} categories` : "Set limits"}
+        />
+        <QuickLink
+          to="/analytics"
+          icon={ChartNoAxesCombined}
+          title="Analytics"
+          hint="Trends & insights"
+        />
+      </div>
+    </div>
+  );
+}
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Receipt;
+  label: string;
+  value: string;
+}) {
+  return (
+    <motion.div className="stat-tile" variants={listItemVariants}>
+      <Icon size={15} className="stat-tile__icon" />
+      <span className="stat-tile__value money">{value}</span>
+      <span className="stat-tile__label">{label}</span>
+    </motion.div>
+  );
+}
+
+function PeriodCell({
+  label,
+  income,
+  expense,
+  balance,
+  format,
+  compact,
+}: {
+  label: string;
+  income: number;
+  expense: number;
+  balance: number;
+  format: (v: number) => string;
+  compact: (v: number) => string;
+}) {
+  const empty = income === 0 && expense === 0;
+  return (
+    <div className={`period-cell ${empty ? "period-cell--empty" : ""}`}>
+      <span className="period-cell__label">{label}</span>
+      <span
+        className={`period-cell__balance money ${balance >= 0 ? "text-income" : "text-expense"}`}
+        title={format(balance)}
+      >
+        {compact(balance)}
+      </span>
+      <div className="period-cell__bars">
+        <span
+          className="period-cell__bar period-cell__bar--in"
+          style={{
+            width: `${income + expense > 0 ? (income / (income + expense)) * 100 : 0}%`,
+          }}
+        />
+        <span
+          className="period-cell__bar period-cell__bar--out"
+          style={{
+            width: `${income + expense > 0 ? (expense / (income + expense)) * 100 : 0}%`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function QuickLink({
+  to,
+  icon: Icon,
+  title,
+  hint,
+}: {
+  to: string;
+  icon: typeof Target;
+  title: string;
+  hint: string;
+}) {
+  return (
+    <Link to={to} className="quick-link">
+      <span className="quick-link__icon">
+        <Icon size={18} />
+      </span>
+      <span className="quick-link__text">
+        <span className="quick-link__title">{title}</span>
+        <span className="quick-link__hint">{hint}</span>
+      </span>
+      <ArrowRight size={16} className="quick-link__arrow" />
+    </Link>
   );
 }

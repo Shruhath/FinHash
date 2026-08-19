@@ -1,143 +1,219 @@
+/* ============================================================
+   Savings goals
+   ============================================================ */
+
 .goals-page {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-lg);
-  max-width: 900px;
 }
 
-.goals-page__header {
+/* ---------- Summary ---------- */
+.goals-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-md);
+  gap: var(--space-xl);
+  padding: var(--space-xl);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-light);
+  background:
+    radial-gradient(
+      110% 130% at 100% 0%,
+      rgba(204, 85, 0, 0.18) 0%,
+      rgba(204, 85, 0, 0) 55%
+    ),
+    linear-gradient(165deg, var(--color-bg-elevated), var(--color-bg-card) 60%);
+  box-shadow: var(--shadow-sm);
 }
 
-.goals-page__title {
-  font-size: 1.5rem;
-  font-weight: 700;
+.goals-summary__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.goals-summary__label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.goals-summary__value {
+  font-size: clamp(1.7rem, 6vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--color-text-primary);
+  line-height: 1.1;
+}
+
+.goals-summary__sub {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.goals-summary__ring {
+  font-size: var(--text-md);
+  font-weight: 800;
   color: var(--color-text-primary);
 }
 
-.goals-page__subtitle {
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-  margin-top: 2px;
-}
-
-.goals-section-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-
-/* Goals Grid */
+/* ---------- Cards ---------- */
 .goals-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--space-md);
 }
 
-/* Goal Card */
 .goal-card {
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
 }
 
-.goal-card--completed {
-  opacity: 0.7;
+@media (hover: hover) {
+  .goal-card:hover {
+    border-color: var(--color-border-light);
+  }
 }
 
-.goal-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+.goal-card--done {
+  opacity: 0.85;
+  border-color: rgba(47, 191, 107, 0.25);
 }
 
-.goal-card__title-row {
+.goal-card__head {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-md);
 }
 
-.goal-card__icon {
-  color: var(--color-accent);
+.goal-card__ring {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.goal-card__badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-success-soft);
+  color: var(--color-success);
   flex-shrink: 0;
 }
 
-.goal-card__icon--done {
-  color: var(--color-success);
+.goal-card__title {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .goal-card__name {
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 650;
+  letter-spacing: -0.02em;
   color: var(--color-text-primary);
 }
 
-.goal-card__description {
-  font-size: 0.82rem;
+.goal-card__due {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
-  line-height: 1.4;
+}
+
+.goal-card__actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.goal-card__actions .icon-btn {
+  width: 32px;
+  height: 32px;
+}
+
+.goal-card__desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.45;
 }
 
 .goal-card__amounts {
   display: flex;
   align-items: baseline;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
-.goal-card__current {
-  font-size: 1.3rem;
-  font-weight: 700;
+.goal-card__saved {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  letter-spacing: -0.03em;
   color: var(--color-text-primary);
 }
 
 .goal-card__target {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--color-text-muted);
 }
 
-.goal-card__footer {
+.goal-card__foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: var(--space-xs);
+  gap: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
 }
 
-.goal-card__percentage {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--color-success);
+.goal-card__left {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text-secondary);
 }
 
-.goal-card__days {
+/* ---------- Completed ---------- */
+.goals-completed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.collapse-toggle {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  width: 100%;
+  transition: background-color var(--transition-fast);
+}
+
+.collapse-toggle:hover {
+  background-color: var(--color-bg-elevated);
+}
+
+.collapse-toggle__chevron {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
   color: var(--color-text-muted);
-}
-
-.goal-card__days--overdue {
-  color: var(--color-danger);
-}
-
-@media (max-width: 768px) {
-  .goals-page__header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .goals-grid {
-    grid-template-columns: 1fr;
-  }
 }

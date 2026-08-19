@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><rect width="512" height="512" fill="#000000"/><g transform="translate(256,256) scale(0.7) translate(-256,-256)">
+  <defs>
+    <linearGradient id="gV" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#FFA05C"/>
+      <stop offset="100%" stop-color="#E86A0A"/>
+    </linearGradient>
+    <linearGradient id="gH" x1="0" y1="0" x2="1" y2="0.4">
+      <stop offset="0%" stop-color="#B34900"/>
+      <stop offset="100%" stop-color="#CC5500"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <g fill="url(#gH)">
+    <rect x="96" y="182" width="320" height="48" rx="24"/>
+    <rect x="96" y="296" width="320" height="48" rx="24"/>
+  </g>
+  <g fill="url(#gV)" filter="url(#sh)" transform="translate(256,256) skewX(-12) translate(-256,-256)">
+    <rect x="174" y="96" width="48" height="320" rx="24"/>
+    <rect x="290" y="96" width="48" height="320" rx="24"/>
+  </g>
+</g></svg>

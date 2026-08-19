@@ -1,32 +1,122 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { ChartNoAxesCombined, ShieldCheck, Zap } from "lucide-react";
+import { toast } from "sonner";
 import { signInWithGoogle } from "../lib/firebase";
+import { LogoMark } from "../components/ui/Logo";
+import { EASE_OUT } from "../lib/motion";
 import "./LoginPage.css";
 
+const FEATURES = [
+  {
+    icon: Zap,
+    title: "Log in seconds",
+    text: "Amount, category, done — split payments included.",
+  },
+  {
+    icon: ChartNoAxesCombined,
+    title: "See the pattern",
+    text: "Budgets, goals, debts and trends in one place.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Yours alone",
+    text: "Your data stays tied to your account. No ads, no selling.",
+  },
+];
+
 export default function LoginPage() {
+  const [busy, setBusy] = useState(false);
+
   const handleLogin = async () => {
+    setBusy(true);
     try {
       await signInWithGoogle();
-      // The AuthProvider will detect the user change,
-      // and AuthenticatedApp (or App.tsx routes) will handle the redirect.
-      // But we can also force a navigation if needed, though relying on auth state is better.
     } catch (error) {
       console.error("Login failed:", error);
+      const code = (error as { code?: string })?.code;
+      if (code !== "auth/popup-closed-by-user") {
+        toast.error("Sign-in failed — please try again");
+      }
+    } finally {
+      setBusy(false);
     }
   };
 
-  // If already authenticated, redirect to dashboard
-  // (This logic is usually better in a wrapper or useEffect)
-
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-logo">
-          <span className="login-logo__text">Fin</span>
-          <span className="login-logo__hash">#</span>
-        </div>
-        <p className="login-subtitle">Premium Budget Tracker</p>
+    <div className="login">
+      <div className="login__aurora" aria-hidden>
+        <span className="login__orb login__orb--1" />
+        <span className="login__orb login__orb--2" />
+        <span className="login__orb login__orb--3" />
+      </div>
 
-        <button className="login-btn" onClick={handleLogin}>
-          <svg className="login-btn__icon" viewBox="0 0 24 24" width="20" height="20">
+      <motion.main
+        className="login__inner"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: EASE_OUT }}
+      >
+        <motion.div
+          className="login__brand"
+          initial={{ scale: 0.85, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        >
+          <LogoMark size={64} />
+          <h1 className="login__wordmark">
+            Fin<span className="logo__word-accent">Hash</span>
+          </h1>
+        </motion.div>
+
+        <motion.p
+          className="login__tagline"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12, duration: 0.4, ease: EASE_OUT }}
+        >
+          Every rupee, dollar and euro — accounted for.
+        </motion.p>
+
+        <motion.ul
+          className="login__features"
+          initial="hidden"
+          animate="show"
+          variants={{
+            hidden: {},
+            show: { transition: { staggerChildren: 0.08, delayChildren: 0.2 } },
+          }}
+        >
+          {FEATURES.map(({ icon: Icon, title, text }) => (
+            <motion.li
+              className="login__feature"
+              key={title}
+              variants={{
+                hidden: { opacity: 0, y: 14 },
+                show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+              }}
+            >
+              <span className="login__feature-icon">
+                <Icon size={17} />
+              </span>
+              <div>
+                <strong>{title}</strong>
+                <span>{text}</span>
+              </div>
+            </motion.li>
+          ))}
+        </motion.ul>
+
+        <motion.button
+          className="login__btn"
+          onClick={handleLogin}
+          disabled={busy}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45, duration: 0.4, ease: EASE_OUT }}
+          whileTap={{ scale: 0.97 }}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
               fill="#4285F4"
@@ -44,9 +134,18 @@ export default function LoginPage() {
               fill="#EA4335"
             />
           </svg>
-          Sign in with Google
-        </button>
-      </div>
+          {busy ? "Opening Google…" : "Continue with Google"}
+        </motion.button>
+
+        <motion.p
+          className="login__legal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          Works offline · Installs like a native app
+        </motion.p>
+      </motion.main>
     </div>
   );
 }

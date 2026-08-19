@@ -1,451 +1,590 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
-import { useCurrentUser } from "../hooks/useCurrentUser";
-import { getCurrencyByCountry } from "../lib/countries";
-import DashboardLayout from "../components/dashboard/DashboardLayout";
-import AddTransactionModal from "../components/transactions/AddTransactionModal";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Plus,
+  ArrowDownToLine,
   Pencil,
+  Plus,
+  Receipt,
+  Search,
+  SlidersHorizontal,
   Trash2,
-  Filter,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "../../convex/_generated/api";
+import { Doc } from "../../convex/_generated/dataModel";
+import { useCurrency } from "../hooks/useCurrency";
+import { useShell } from "../components/layout/AppShell";
+import PageHeader from "../components/ui/PageHeader";
+import Sheet from "../components/ui/Sheet";
+import SegmentedControl from "../components/ui/SegmentedControl";
+import EmptyState from "../components/ui/EmptyState";
+import CategoryIcon from "../components/ui/CategoryIcon";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import { SkeletonList } from "../components/ui/Skeleton";
+import EditTransactionSheet from "../components/transactions/EditTransactionSheet";
+import { formatDayLabel, formatTime } from "../lib/format";
+import { listItemVariants, listVariants } from "../lib/motion";
+import { haptic } from "../lib/haptics";
+import { parseTransactionsCsv } from "../lib/csv";
 import "./TransactionsPage.css";
 
+type TypeFilter = "all" | "income" | "expense";
+
 export default function TransactionsPage() {
-  const user = useCurrentUser();
   const categories = useQuery(api.categories.getCategories) ?? [];
   const deleteTransaction = useMutation(api.transactions.deleteTransaction);
-  const editTransactionMut = useMutation(api.transactions.editTransaction);
+  const importTransactions = useMutation(api.migration.importTransactions);
+  const { format } = useCurrency();
+  const { openAdd } = useShell();
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<"" | "income" | "expense">("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-
-  // Editing state
-  const [editingId, setEditingId] = useState<Id<"transactions"> | null>(null);
-  const [editAmount, setEditAmount] = useState("");
-  const [editCategory, setEditCategory] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editDate, setEditDate] = useState("");
-  const [editType, setEditType] = useState<"income" | "expense">("expense");
-
-  const currencySymbol = user
-    ? getCurrencyByCountry(user.country).symbol
-    : "$";
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [editing, setEditing] = useState<Doc<"transactions"> | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Doc<"transactions"> | null>(
+    null
+  );
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const queryArgs: {
     type?: "income" | "expense";
     startDate?: number;
     endDate?: number;
   } = {};
-  if (typeFilter) queryArgs.type = typeFilter;
+  if (typeFilter !== "all") queryArgs.type = typeFilter;
   if (startDate) queryArgs.startDate = new Date(startDate).getTime();
-  if (endDate)
-    queryArgs.endDate = new Date(endDate + "T23:59:59").getTime();
+  if (endDate) queryArgs.endDate = new Date(`${endDate}T23:59:59`).getTime();
 
-  const transactions =
-    useQuery(api.transactions.getTransactions, queryArgs) ?? [];
+  const transactions = useQuery(api.transactions.getTransactions, queryArgs);
 
-  // Client-side category filter
-  const filteredTransactions = categoryFilter
-    ? transactions.filter((t) => t.categoryId === categoryFilter)
-    : transactions;
+  const categoryById = useMemo(
+    () => new Map(categories.map((c) => [c._id as string, c])),
+    [categories]
+  );
 
-  const getCategoryName = (catId: string) =>
-    categories.find((c) => c._id === catId)?.name ?? "Unknown";
+  const filtered = useMemo(() => {
+    if (!transactions) return undefined;
+    const term = search.trim().toLowerCase();
+    return transactions.filter((t) => {
+      if (categoryFilter && t.categoryId !== categoryFilter) return false;
+      if (!term) return true;
+      const category = categoryById.get(t.categoryId)?.name ?? "";
+      return (
+        (t.description ?? "").toLowerCase().includes(term) ||
+        category.toLowerCase().includes(term) ||
+        String(t.amount).includes(term)
+      );
+    });
+  }, [transactions, search, categoryFilter, categoryById]);
 
-  const getCategoryColor = (catId: string) =>
-    categories.find((c) => c._id === catId)?.color ?? "#71717a";
-
-  const formatCurrency = (amount: number) =>
-    `${currencySymbol} ${amount.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-
-  const handleDelete = async (id: Id<"transactions">) => {
-    try {
-      await deleteTransaction({ id });
-      toast.success("Transaction deleted");
-    } catch {
-      toast.error("Failed to delete transaction");
+  /** Group into day buckets so the list reads like a statement. */
+  const groups = useMemo(() => {
+    if (!filtered) return [];
+    const map = new Map<string, { label: string; items: Doc<"transactions">[] }>();
+    for (const tx of filtered) {
+      const day = new Date(tx.date);
+      day.setHours(0, 0, 0, 0);
+      const key = String(day.getTime());
+      if (!map.has(key)) map.set(key, { label: formatDayLabel(tx.date), items: [] });
+      map.get(key)!.items.push(tx);
     }
-  };
+    return [...map.entries()]
+      .sort(([a], [b]) => Number(b) - Number(a))
+      .map(([key, value]) => ({ key, ...value }));
+  }, [filtered]);
 
-  const startEdit = (tx: (typeof transactions)[number]) => {
-    setEditingId(tx._id);
-    setEditAmount(tx.amount.toString());
-    setEditCategory(tx.categoryId);
-    setEditDescription(tx.description ?? "");
+  const totals = useMemo(() => {
+    const income = (filtered ?? [])
+      .filter((t) => t.type === "income")
+      .reduce((s, t) => s + t.amount, 0);
+    const expense = (filtered ?? [])
+      .filter((t) => t.type === "expense")
+      .reduce((s, t) => s + t.amount, 0);
+    return { income, expense, net: income - expense };
+  }, [filtered]);
 
-    // Adjust for timezone to display correctly in datetime-local input
-    const localDate = new Date(tx.date);
-    localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
-    setEditDate(localDate.toISOString().slice(0, 16));
-
-    setEditType(tx.type);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-  };
-
-  const saveEdit = async () => {
-    if (!editingId) return;
-    try {
-      await editTransactionMut({
-        id: editingId,
-        amount: parseFloat(editAmount),
-        type: editType,
-        categoryId: editCategory as Id<"categories">,
-        date: new Date(editDate).getTime(),
-        description: editDescription || undefined,
-      });
-      toast.success("Transaction updated");
-      setEditingId(null);
-    } catch {
-      toast.error("Failed to update transaction");
-    }
-  };
+  const activeFilterCount =
+    (typeFilter !== "all" ? 1 : 0) +
+    (categoryFilter ? 1 : 0) +
+    (startDate ? 1 : 0) +
+    (endDate ? 1 : 0);
 
   const clearFilters = () => {
-    setTypeFilter("");
+    setTypeFilter("all");
     setCategoryFilter("");
     setStartDate("");
     setEndDate("");
   };
 
-  const hasActiveFilters =
-    !!typeFilter || !!categoryFilter || !!startDate || !!endDate;
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const id = pendingDelete._id;
+    setPendingDelete(null);
+    try {
+      await deleteTransaction({ id });
+      haptic("success");
+      toast.success("Transaction deleted");
+    } catch {
+      haptic("error");
+      toast.error("Couldn't delete that transaction");
+    }
+  };
 
-  // CSV Import Handler
-  const importTransactions = useMutation(api.migration.importTransactions);
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const toastId = toast.loading("Reading file…");
     try {
-      const text = await file.text();
-      // Split by newline but handle standard line endings
-      const rows = text.split(/\r?\n/).slice(1);
-
-      const transactions = rows
-        .map((row, index) => {
-          if (!row.trim()) return null;
-
-          // Robust CSV regex to handle quoted fields containing commas
-          const regex = /(?:^|,)(?:"([^"]*)"|([^",]*))/g;
-          const cols: string[] = [];
-
-          let match;
-
-          // Safety: Prevent infinite loops (e.g. if regex matches empty string repeatedly without consuming)
-          while ((match = regex.exec(row)) !== null) {
-            // match[1] is quoted content, match[2] is unquoted
-            let val = match[1] !== undefined ? match[1] : match[2];
-            val = val ? val.trim() : "";
-            cols.push(val);
-            if (cols.length > 50) break; // Hard limit for columns to prevent crash
-          }
-
-          if (cols.length < 9) {
-            // Fallback for simple split if regex didn't find enough cols (unlikely but safe)
-            const simpleCols = row.split(",");
-            if (simpleCols.length >= 9) {
-              // Map simple split to cols if regex failed
-              cols.length = 0;
-              simpleCols.forEach(c => cols.push(c.trim()));
-            } else {
-              console.warn(`Row ${index + 2} has insufficient columns: ${cols.length}`);
-              return null;
-            }
-          }
-
-          // Index mapping based on user's CSV:
-          // 0:_creationTime, 1:_id, 2:amount, 3:categoryId, 4:date, 
-          // 5:description, 6:isRecurring, 7:type, 8:categoryName
-
-          const amountStr = cols[2];
-          const date = cols[4];
-          const description = cols[5]?.replace(/"/g, ""); // Extra cleanup
-          const typeStr = cols[7];
-          const categoryName = cols[8]?.replace(/"/g, "") || "Uncategorized";
-
-          if (!amountStr || !date || !description || !typeStr) {
-            console.warn(`Row ${index + 2} missing required fields`);
-            return null;
-          }
-
-          const amount = parseFloat(amountStr);
-          const type = typeStr.toLowerCase().includes("income") ? "income" : "expense";
-
-          if (isNaN(amount)) {
-            console.warn(`Row ${index + 2} has invalid amount: ${amountStr}`);
-            return null;
-          }
-
-          return {
-            amount,
-            date,
-            description,
-            type: type as "income" | "expense",
-            categoryName,
-          };
-        })
-        .filter((t): t is any => t !== null);
-
-      if (transactions.length === 0) {
-        toast.error("No valid transactions found");
+      const rows = parseTransactionsCsv(await file.text());
+      if (rows.length === 0) {
+        toast.error("No valid rows found in that CSV", { id: toastId });
         return;
       }
-
-      const result = await importTransactions({ transactions });
-      toast.success(`Imported ${result.count} transactions successfully!`);
-
-      // Clear input
-      e.target.value = "";
-
+      const result = await importTransactions({ transactions: rows });
+      haptic("success");
+      toast.success(`Imported ${result.count} transactions`, { id: toastId });
     } catch (error) {
       console.error(error);
-      toast.error("Failed to import transactions");
+      toast.error("Import failed — check the CSV format", { id: toastId });
+    } finally {
+      e.target.value = "";
     }
   };
 
+  const exportCsv = () => {
+    const rows = filtered ?? [];
+    if (rows.length === 0) {
+      toast.error("Nothing to export");
+      return;
+    }
+    const header = "date,type,category,description,amount";
+    const body = rows
+      .map((t) => {
+        const cat = categoryById.get(t.categoryId)?.name ?? "Unknown";
+        const note = (t.description ?? "").replace(/"/g, '""');
+        return `${new Date(t.date).toISOString()},${t.type},"${cat}","${note}",${t.amount}`;
+      })
+      .join("\n");
+    const blob = new Blob([`${header}\n${body}`], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `finhash-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} transactions`);
+  };
+
   return (
-    <DashboardLayout>
-      <div className="transactions-page">
-        <div className="transactions-header">
-          <div>
-            <h1 className="transactions-header__title">Transactions</h1>
-            <p className="transactions-header__subtitle">
-              Manage your income and expenses
-            </p>
-          </div>
-          <div className="transactions-header__actions">
-            <label className="btn btn--secondary" style={{ cursor: "pointer" }}>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                style={{ display: "none" }}
-              />
-              <span>Import CSV</span>
-            </label>
+    <div className="page tx-page">
+      <PageHeader
+        title="Transactions"
+        subtitle={
+          filtered
+            ? `${filtered.length} entr${filtered.length === 1 ? "y" : "ies"}`
+            : "Loading…"
+        }
+        actions={
+          <>
             <button
-              className="btn btn--primary"
-              onClick={() => setShowAddModal(true)}
+              className="btn btn--secondary btn--sm"
+              onClick={() => fileRef.current?.click()}
             >
-              <Plus size={18} />
-              <span>Add Transaction</span>
+              <ArrowDownToLine size={15} />
+              Import
             </button>
-          </div>
+            <button className="btn btn--secondary btn--sm" onClick={exportCsv}>
+              <ArrowDownToLine size={15} style={{ transform: "rotate(180deg)" }} />
+              Export
+            </button>
+            <button className="btn btn--accent btn--sm tx-page__add" onClick={() => openAdd()}>
+              <Plus size={16} />
+              Add
+            </button>
+          </>
+        }
+      />
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".csv"
+        onChange={handleFileUpload}
+        hidden
+      />
+
+      {/* ---------- Search + filters ---------- */}
+      <div className="tx-toolbar">
+        <div className="search-field">
+          <Search size={16} className="search-field__icon" />
+          <input
+            type="search"
+            className="search-field__input"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search notes, categories, amounts"
+            aria-label="Search transactions"
+          />
+          {search && (
+            <button
+              className="search-field__clear"
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
 
-        <div className="transactions-page__actions">
-          <button
-            className={`transactions-page__filter-btn ${hasActiveFilters ? "transactions-page__filter-btn--active" : ""
-              }`}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter size={18} />
-            Filters
-            {hasActiveFilters && (
-              <span
-                className="transactions-page__filter-clear"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  clearFilters();
-                }}
-              >
-                <X size={14} />
-              </span>
-            )}
+        <button
+          className={`filter-btn ${activeFilterCount ? "filter-btn--active" : ""}`}
+          onClick={() => setFiltersOpen(true)}
+        >
+          <SlidersHorizontal size={16} />
+          <span className="filter-btn__text">Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="filter-btn__count">{activeFilterCount}</span>
+          )}
+        </button>
+      </div>
+
+      {activeFilterCount > 0 && (
+        <div className="hscroll tx-page__active-filters">
+          {typeFilter !== "all" && (
+            <FilterPill
+              label={typeFilter === "income" ? "Income" : "Expenses"}
+              onClear={() => setTypeFilter("all")}
+            />
+          )}
+          {categoryFilter && (
+            <FilterPill
+              label={categoryById.get(categoryFilter)?.name ?? "Category"}
+              onClear={() => setCategoryFilter("")}
+            />
+          )}
+          {startDate && (
+            <FilterPill label={`From ${startDate}`} onClear={() => setStartDate("")} />
+          )}
+          {endDate && (
+            <FilterPill label={`To ${endDate}`} onClear={() => setEndDate("")} />
+          )}
+          <button className="chip tx-page__clear-all" onClick={clearFilters}>
+            Clear all
           </button>
         </div>
+      )}
 
-        {/* Filters */}
-        {showFilters && (
-          <div className="filters-bar">
-            <select
-              className="form-input filters-bar__input"
-              value={typeFilter}
-              onChange={(e) =>
-                setTypeFilter(e.target.value as "" | "income" | "expense")
-              }
+      {/* ---------- Totals ---------- */}
+      {filtered && filtered.length > 0 && (
+        <div className="tx-totals">
+          <div className="tx-totals__item">
+            <span className="tx-totals__label">In</span>
+            <span className="tx-totals__value money text-income">
+              {format(totals.income)}
+            </span>
+          </div>
+          <div className="tx-totals__item">
+            <span className="tx-totals__label">Out</span>
+            <span className="tx-totals__value money text-expense">
+              {format(totals.expense)}
+            </span>
+          </div>
+          <div className="tx-totals__item">
+            <span className="tx-totals__label">Net</span>
+            <span
+              className={`tx-totals__value money ${totals.net >= 0 ? "text-income" : "text-expense"}`}
             >
-              <option value="">All Types</option>
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
-            </select>
+              {format(totals.net)}
+            </span>
+          </div>
+        </div>
+      )}
 
+      {/* ---------- List ---------- */}
+      {filtered === undefined ? (
+        <div className="card">
+          <SkeletonList rows={7} />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            icon={Receipt}
+            title={
+              activeFilterCount || search
+                ? "Nothing matches those filters"
+                : "No transactions yet"
+            }
+            description={
+              activeFilterCount || search
+                ? "Try widening your search or clearing a filter."
+                : "Track your first income or expense to get started."
+            }
+            action={
+              activeFilterCount || search ? (
+                <button
+                  className="btn btn--secondary btn--sm"
+                  onClick={() => {
+                    clearFilters();
+                    setSearch("");
+                  }}
+                >
+                  Clear filters
+                </button>
+              ) : (
+                <button className="btn btn--accent btn--sm" onClick={() => openAdd()}>
+                  Add transaction
+                </button>
+              )
+            }
+          />
+        </div>
+      ) : (
+        <div className="tx-groups">
+          {groups.map((group) => {
+            const dayTotal = group.items.reduce(
+              (s, t) => s + (t.type === "income" ? t.amount : -t.amount),
+              0
+            );
+            return (
+              <section className="tx-group" key={group.key}>
+                <header className="tx-group__header">
+                  <span className="tx-group__label">{group.label}</span>
+                  <span
+                    className={`tx-group__total money ${dayTotal >= 0 ? "text-income" : ""}`}
+                  >
+                    {dayTotal >= 0 ? "+" : "−"}
+                    {format(Math.abs(dayTotal))}
+                  </span>
+                </header>
+
+                <motion.ul
+                  className="tx-list"
+                  variants={listVariants}
+                  initial="initial"
+                  animate="animate"
+                >
+                  <AnimatePresence initial={false}>
+                    {group.items.map((tx) => {
+                      const cat = categoryById.get(tx.categoryId);
+                      return (
+                        <motion.li
+                          key={tx._id}
+                          className="tx-row"
+                          variants={listItemVariants}
+                          exit="exit"
+                          layout
+                        >
+                          <CategoryIcon
+                            name={cat?.icon}
+                            color={cat?.color ?? "#71717a"}
+                            size={17}
+                            tileSize={40}
+                          />
+                          <div className="tx-row__text">
+                            <span className="tx-row__title truncate">
+                              {tx.description || cat?.name || "Transaction"}
+                            </span>
+                            <span className="tx-row__meta truncate">
+                              {formatTime(tx.date)} · {cat?.name ?? "Unknown"}
+                              {tx.splitGroupId && (
+                                <span className="badge badge--accent tx-row__split">
+                                  Split
+                                </span>
+                              )}
+                            </span>
+                          </div>
+
+                          <span
+                            className={`tx-row__amount money ${tx.type === "income" ? "text-income" : ""}`}
+                          >
+                            {tx.type === "income" ? "+" : "−"}
+                            {format(tx.amount)}
+                          </span>
+
+                          <div className="tx-row__actions">
+                            <button
+                              className="icon-btn"
+                              onClick={() => setEditing(tx)}
+                              aria-label="Edit transaction"
+                            >
+                              <Pencil size={15} />
+                            </button>
+                            <button
+                              className="icon-btn icon-btn--danger"
+                              onClick={() => setPendingDelete(tx)}
+                              aria-label="Delete transaction"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </motion.li>
+                      );
+                    })}
+                  </AnimatePresence>
+                </motion.ul>
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ---------- Filter sheet ---------- */}
+      <Sheet
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        title="Filters"
+        footer={
+          <>
+            <button
+              className="btn btn--ghost"
+              onClick={() => {
+                clearFilters();
+                setFiltersOpen(false);
+              }}
+            >
+              Reset
+            </button>
+            <button
+              className="btn btn--accent"
+              onClick={() => setFiltersOpen(false)}
+            >
+              Show results
+            </button>
+          </>
+        }
+      >
+        <div className="filter-form">
+          <div className="field">
+            <span className="field__label">Type</span>
+            <SegmentedControl
+              fluid
+              segments={[
+                { value: "all", label: "All" },
+                { value: "income", label: "Income" },
+                { value: "expense", label: "Expense" },
+              ]}
+              value={typeFilter}
+              onChange={setTypeFilter}
+            />
+          </div>
+
+          <div className="field">
+            <span className="field__label">Category</span>
             <select
-              className="form-input filters-bar__input"
+              className="form-input"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
-              <option value="">All Categories</option>
-              {categories.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
+              <option value="">All categories</option>
+              {categories
+                .filter((c) => typeFilter === "all" || c.type === typeFilter)
+                .map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
             </select>
-
-            <input
-              type="date"
-              className="form-input filters-bar__input"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              placeholder="Start date"
-            />
-
-            <input
-              type="date"
-              className="form-input filters-bar__input"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              placeholder="End date"
-            />
           </div>
-        )}
 
-        {/* Transaction List */}
-        <div className="tx-list">
-          {filteredTransactions.length === 0 ? (
-            <div className="tx-list__empty">
-              <p>No transactions found</p>
+          <div className="filter-form__dates">
+            <div className="field">
+              <label className="field__label" htmlFor="from-date">
+                From
+              </label>
+              <input
+                id="from-date"
+                type="date"
+                className="form-input"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
             </div>
-          ) : (
-            filteredTransactions.map((tx) => (
-              <div className="tx-item" key={tx._id}>
-                {editingId === tx._id ? (
-                  /* Edit Mode */
-                  <div className="tx-item__edit">
-                    <div className="tx-item__edit-row">
-                      <select
-                        className="form-input"
-                        value={editType}
-                        onChange={(e) =>
-                          setEditType(e.target.value as "income" | "expense")
-                        }
-                      >
-                        <option value="expense">Expense</option>
-                        <option value="income">Income</option>
-                      </select>
-                      <select
-                        className="form-input"
-                        value={editCategory}
-                        onChange={(e) => setEditCategory(e.target.value)}
-                      >
-                        {categories
-                          .filter((c) => c.type === editType)
-                          .map((c) => (
-                            <option key={c._id} value={c._id}>
-                              {c.name}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                    <div className="tx-item__edit-row">
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={editAmount}
-                        onChange={(e) => setEditAmount(e.target.value)}
-                        step="0.01"
-                      />
-                      <input
-                        type="datetime-local"
-                        className="form-input"
-                        value={editDate}
-                        onChange={(e) => setEditDate(e.target.value)}
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      placeholder="Description"
-                    />
-                    <div className="tx-item__edit-actions">
-                      <button className="btn btn--accent" onClick={saveEdit}>
-                        Save
-                      </button>
-                      <button className="btn btn--ghost" onClick={cancelEdit}>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* Display Mode */
-                  <>
-                    <div
-                      className="tx-item__dot"
-                      style={{
-                        backgroundColor: getCategoryColor(tx.categoryId),
-                      }}
-                    />
-                    <div className="tx-item__info">
-                      <span className="tx-item__category">
-                        {tx.description || getCategoryName(tx.categoryId)}
-                      </span>
-                      <span className="tx-item__meta">
-                        {new Date(tx.date).toLocaleDateString(undefined, {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                        {` · ${getCategoryName(tx.categoryId)}`}
-                        {tx.splitGroupId && (
-                          <span className="tx-item__split-badge">Split</span>
-                        )}
-                      </span>
-                    </div>
-                    <span
-                      className={`tx-item__amount ${tx.type === "income" ? "text-income" : "text-expense"
-                        }`}
-                    >
-                      {tx.type === "income" ? "+" : "-"}
-                      {formatCurrency(tx.amount)}
-                    </span>
-                    <div className="tx-item__actions">
-                      <button
-                        className="tx-item__action-btn"
-                        onClick={() => startEdit(tx)}
-                        title="Edit"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        className="tx-item__action-btn tx-item__action-btn--danger"
-                        onClick={() => handleDelete(tx._id)}
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+            <div className="field">
+              <label className="field__label" htmlFor="to-date">
+                To
+              </label>
+              <input
+                id="to-date"
+                type="date"
+                className="form-input"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </div>
 
-      <AddTransactionModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+          <div className="field">
+            <span className="field__label">Quick ranges</span>
+            <div className="hscroll">
+              {[
+                { label: "This month", days: 0 },
+                { label: "Last 7 days", days: 7 },
+                { label: "Last 30 days", days: 30 },
+                { label: "Last 90 days", days: 90 },
+              ].map(({ label, days }) => (
+                <button
+                  key={label}
+                  className="chip"
+                  onClick={() => {
+                    const end = new Date();
+                    const start =
+                      days === 0
+                        ? new Date(end.getFullYear(), end.getMonth(), 1)
+                        : new Date(Date.now() - days * 86_400_000);
+                    setStartDate(start.toISOString().slice(0, 10));
+                    setEndDate(end.toISOString().slice(0, 10));
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Sheet>
+
+      <EditTransactionSheet
+        transaction={editing}
+        onClose={() => setEditing(null)}
       />
-    </DashboardLayout>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete transaction?"
+        message={
+          pendingDelete ? (
+            <>
+              <strong>
+                {pendingDelete.description ||
+                  categoryById.get(pendingDelete.categoryId)?.name ||
+                  "This transaction"}
+              </strong>{" "}
+              for {format(pendingDelete.amount)} will be removed permanently.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+    </div>
+  );
+}
+
+function FilterPill({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <span className="chip chip--active filter-pill">
+      {label}
+      <button onClick={onClear} aria-label={`Remove ${label} filter`}>
+        <X size={13} />
+      </button>
+    </span>
   );
 }

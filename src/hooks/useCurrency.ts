@@ -1,0 +1,26 @@
+import { useCallback, useMemo } from "react";
+import { useCurrentUser } from "./useCurrentUser";
+import { getCurrencyByCountry } from "../lib/countries";
+import { formatCompact, formatMoney } from "../lib/format";
+
+/** Currency symbol + formatters bound to the signed-in user's country. */
+export function useCurrency() {
+  const user = useCurrentUser();
+  const symbol = useMemo(
+    () => (user ? getCurrencyByCountry(user.country).symbol : "$"),
+    [user]
+  );
+
+  const format = useCallback(
+    (amount: number, opts?: { decimals?: boolean; sign?: boolean }) =>
+      formatMoney(amount, symbol, opts),
+    [symbol]
+  );
+
+  const compact = useCallback(
+    (amount: number) => formatCompact(amount, symbol),
+    [symbol]
+  );
+
+  return { symbol, format, compact };
+}

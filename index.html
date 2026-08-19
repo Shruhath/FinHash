@@ -1,17 +1,128 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5"
+    />
+
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("finhash-theme") || "system";
+          var resolved =
+            t === "system"
+              ? window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark"
+              : t;
+          document.documentElement.setAttribute("data-theme", resolved);
+        } catch (e) {}
+      })();
+    </script>
+
+    <title>FinHash — Budget Tracker</title>
+    <meta
+      name="description"
+      content="FinHash is a fast, private budget tracker for income, expenses, budgets, savings goals and debts."
+    />
+
+    <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="/finhash.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#000000" />
-    <title>FinHash</title>
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/finhash.svg" color="#CC5500" />
+
+    <!-- Theme -->
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#000000"
+    />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#f6f5f3"
+    />
+    <meta name="color-scheme" content="dark light" />
+
+    <!-- iOS standalone -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="FinHash" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="FinHash — Budget Tracker" />
+    <meta
+      property="og:description"
+      content="Track income, expenses, budgets, goals and debts. Fast, private, offline-ready."
+    />
+    <meta property="og:image" content="/icons/icon-512.png" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* Paint the shell before React hydrates — no white flash */
+      html {
+        background: #000;
+      }
+      html[data-theme="light"] {
+        background: #f6f5f3;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: inherit;
+      }
+      #boot svg {
+        width: 76px;
+        height: 76px;
+        animation: bootPulse 1.5s ease-in-out infinite;
+      }
+      @keyframes bootPulse {
+        0%,
+        100% {
+          opacity: 0.45;
+          transform: scale(0.94);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="boot">
+      <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <g fill="#B34900">
+          <rect x="96" y="182" width="320" height="48" rx="24" />
+          <rect x="96" y="296" width="320" height="48" rx="24" />
+        </g>
+        <g
+          fill="#F5782A"
+          transform="translate(256,256) skewX(-12) translate(-256,-256)"
+        >
+          <rect x="174" y="96" width="48" height="320" rx="24" />
+          <rect x="290" y="96" width="48" height="320" rx="24" />
+        </g>
+      </svg>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

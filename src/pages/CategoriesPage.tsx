@@ -1,334 +1,322 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
-import DashboardLayout from "../components/dashboard/DashboardLayout";
-import {
-    Plus,
-    Pencil,
-    Trash2,
-    X,
-    Briefcase,
-    Laptop,
-    TrendingUp,
-    Gift,
-    RotateCcw,
-    MoreHorizontal,
-    Utensils,
-    Home,
-    Car,
-    ShoppingBag,
-    Gamepad2,
-    Heart,
-    GraduationCap,
-    Zap,
-    ShoppingCart,
-    Sparkles,
-    Plane,
-    CreditCard,
-    Coffee,
-    Music,
-    Tv,
-    Smartphone,
-    Wifi,
-    Book,
-    Dumbbell,
-    Stethoscope,
-    Scissors,
-    Shirt,
-    Watch,
-    Smile,
-} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, Pencil, Plus, Shapes, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "../../convex/_generated/api";
+import { Doc, Id } from "../../convex/_generated/dataModel";
+import PageHeader from "../components/ui/PageHeader";
+import SegmentedControl from "../components/ui/SegmentedControl";
+import Sheet from "../components/ui/Sheet";
+import EmptyState from "../components/ui/EmptyState";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import CategoryIcon from "../components/ui/CategoryIcon";
+import { SkeletonList } from "../components/ui/Skeleton";
+import { listItemVariants, listVariants } from "../lib/motion";
+import { haptic } from "../lib/haptics";
 import "./CategoriesPage.css";
 
-// Map of icon names to components
-const ICON_MAP: Record<string, any> = {
-    Briefcase,
-    Laptop,
-    TrendingUp,
-    Gift,
-    RotateCcw,
-    MoreHorizontal,
-    Utensils,
-    Home,
-    Car,
-    ShoppingBag,
-    Gamepad2,
-    Heart,
-    GraduationCap,
-    Zap,
-    ShoppingCart,
-    Sparkles,
-    Plane,
-    CreditCard,
-    Coffee,
-    Music,
-    Tv,
-    Smartphone,
-    Wifi,
-    Book,
-    Dumbbell,
-    Stethoscope,
-    Scissors,
-    Shirt,
-    Watch,
-    Smile,
-};
+type Category = Doc<"categories">;
 
-const AVAILABLE_ICONS = Object.keys(ICON_MAP);
+/** Curated lucide names — kept in sync with what the seed data uses. */
+const ICON_CHOICES = [
+  "Utensils", "Coffee", "ShoppingCart", "ShoppingBag", "Home", "Car",
+  "Bus", "Plane", "Fuel", "Zap", "Wifi", "Smartphone",
+  "Tv", "Music", "Gamepad2", "Film", "Book", "GraduationCap",
+  "Heart", "Stethoscope", "Dumbbell", "Scissors", "Shirt", "Watch",
+  "Sparkles", "Gift", "PawPrint", "Baby", "Wrench", "Hammer",
+  "CreditCard", "Landmark", "PiggyBank", "TrendingUp", "Briefcase", "Laptop",
+  "Building2", "Receipt", "RotateCcw", "Smile", "MoreHorizontal",
+];
 
-const AVAILABLE_COLORS = [
-    "#ef4444", // Red
-    "#f97316", // Orange
-    "#f59e0b", // Amber
-    "#eab308", // Yellow
-    "#84cc16", // Lime
-    "#22c55e", // Green
-    "#10b981", // Emerald
-    "#14b8a6", // Teal
-    "#06b6d4", // Cyan
-    "#0ea5e9", // Sky
-    "#3b82f6", // Blue
-    "#6366f1", // Indigo
-    "#8b5cf6", // Violet
-    "#a855f7", // Purple
-    "#d946ef", // Fuchsia
-    "#ec4899", // Pink
-    "#f43f5e", // Rose
-    "#71717a", // Zinc
+const COLOR_CHOICES = [
+  "#cc5500", "#f5782a", "#f0a020", "#eab308", "#84cc16", "#22c55e",
+  "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1",
+  "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e", "#ef4444",
+  "#78716c", "#71717a",
 ];
 
 export default function CategoriesPage() {
-    const categories = useQuery(api.categories.getCategories) ?? [];
-    const addCategory = useMutation(api.categories.addCategory);
-    const updateCategory = useMutation(api.categories.updateCategory);
-    const deleteCategory = useMutation(api.categories.deleteCategory);
+  const categories = useQuery(api.categories.getCategories);
+  const addCategory = useMutation(api.categories.addCategory);
+  const updateCategory = useMutation(api.categories.updateCategory);
+  const deleteCategory = useMutation(api.categories.deleteCategory);
 
-    const [activeTab, setActiveTab] = useState<"expense" | "income">("expense");
-    const [showModal, setShowModal] = useState(false);
-    const [editingId, setEditingId] = useState<Id<"categories"> | null>(null);
+  const [tab, setTab] = useState<"expense" | "income">("expense");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Category | null>(null);
+  const [name, setName] = useState("");
+  const [color, setColor] = useState(COLOR_CHOICES[0]!);
+  const [icon, setIcon] = useState(ICON_CHOICES[0]!);
+  const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
 
-    // Form State
-    const [formName, setFormName] = useState("");
-    const [formIcon, setFormIcon] = useState("MoreHorizontal");
-    const [formColor, setFormColor] = useState(AVAILABLE_COLORS[0]!);
-
-    const filteredCategories = categories.filter((c) => c.type === activeTab);
-
-    const resetForm = () => {
-        setShowModal(false);
-        setEditingId(null);
-        setFormName("");
-        setFormIcon("MoreHorizontal");
-        setFormColor(AVAILABLE_COLORS[0]!);
+  const { visible, defaults, custom } = useMemo(() => {
+    const list = (categories ?? []).filter((c) => c.type === tab);
+    return {
+      visible: list,
+      defaults: list.filter((c) => c.isDefault),
+      custom: list.filter((c) => !c.isDefault),
     };
+  }, [categories, tab]);
 
-    const startEdit = (c: (typeof categories)[number]) => {
-        setEditingId(c._id);
-        setFormName(c.name);
-        setFormIcon(c.icon);
-        setFormColor(c.color);
-        setShowModal(true);
-    };
+  const openCreate = () => {
+    setEditing(null);
+    setName("");
+    setColor(COLOR_CHOICES[0]!);
+    setIcon(ICON_CHOICES[0]!);
+    setFormOpen(true);
+  };
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        try {
-            if (editingId) {
-                await updateCategory({
-                    id: editingId,
-                    name: formName,
-                    icon: formIcon,
-                    color: formColor,
-                });
-                toast.success("Category updated");
-            } else {
-                await addCategory({
-                    name: formName,
-                    type: activeTab,
-                    icon: formIcon,
-                    color: formColor,
-                });
-                toast.success("Category added");
+  const openEdit = (category: Category) => {
+    setEditing(category);
+    setName(category.name);
+    setColor(category.color);
+    setIcon(category.icon);
+    setFormOpen(true);
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editing) {
+        await updateCategory({
+          id: editing._id,
+          name: name.trim(),
+          icon,
+          color,
+        });
+        toast.success("Category updated");
+      } else {
+        await addCategory({ name: name.trim(), type: tab, icon, color });
+        toast.success("Category created");
+      }
+      haptic("success");
+      setFormOpen(false);
+    } catch (error) {
+      haptic("error");
+      toast.error(
+        error instanceof Error ? error.message : "Couldn't save that category"
+      );
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const id = pendingDelete._id as Id<"categories">;
+    setPendingDelete(null);
+    try {
+      await deleteCategory({ id });
+      haptic("success");
+      toast.success("Category deleted");
+    } catch (error) {
+      haptic("error");
+      toast.error(
+        error instanceof Error && error.message.includes("transaction")
+          ? "That category still has transactions linked to it"
+          : "Couldn't delete that category"
+      );
+    }
+  };
+
+  return (
+    <div className="page categories-page">
+      <PageHeader
+        title="Categories"
+        subtitle={
+          categories
+            ? `${defaults.length} built-in · ${custom.length} custom`
+            : "Loading…"
+        }
+        actions={
+          <button className="btn btn--accent btn--sm" onClick={openCreate}>
+            <Plus size={16} />
+            New category
+          </button>
+        }
+      />
+
+      <SegmentedControl
+        fluid
+        segments={[
+          { value: "expense", label: "Expenses" },
+          { value: "income", label: "Income" },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
+
+      {categories === undefined ? (
+        <div className="card">
+          <SkeletonList rows={6} />
+        </div>
+      ) : visible.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            icon={Shapes}
+            title="No categories here"
+            description="Create one to start sorting your transactions."
+            action={
+              <button className="btn btn--accent btn--sm" onClick={openCreate}>
+                Create category
+              </button>
             }
-            resetForm();
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to save category");
-        }
-    };
-
-    const handleDelete = async (id: Id<"categories">) => {
-        if (!confirm("Are you sure you want to delete this category?")) return;
-        try {
-            await deleteCategory({ id });
-            toast.success("Category deleted");
-        } catch (error: any) {
-            // Backend throws specific errors if linked to transactions/budgets
-            toast.error(error.message || "Failed to delete category");
-        }
-    };
-
-    const IconComponent = ({ name, size = 18, color }: { name: string; size?: number; color?: string }) => {
-        const Icon = ICON_MAP[name] || MoreHorizontal;
-        return <Icon size={size} color={color} />;
-    };
-
-    return (
-        <DashboardLayout>
-            <div className="categories-page">
-                <div className="categories-page__header">
-                    <div>
-                        <h1 className="categories-page__title">Categories</h1>
-                        <p className="categories-page__subtitle">
-                            Manage your income and expense categories
-                        </p>
-                    </div>
-                    <button
-                        className="categories-page__add-btn"
-                        onClick={() => {
-                            resetForm();
-                            setShowModal(true);
-                        }}
-                    >
-                        <Plus size={18} />
-                        <span>Add Category</span>
-                    </button>
+          />
+        </div>
+      ) : (
+        <motion.ul
+          className="cat-grid"
+          variants={listVariants}
+          initial="initial"
+          animate="animate"
+          key={tab}
+        >
+          <AnimatePresence initial={false}>
+            {visible.map((c) => (
+              <motion.li
+                className="cat-card"
+                key={c._id}
+                variants={listItemVariants}
+                exit="exit"
+                layout
+              >
+                <CategoryIcon
+                  name={c.icon}
+                  color={c.color}
+                  size={19}
+                  tileSize={44}
+                />
+                <div className="cat-card__text">
+                  <span className="cat-card__name truncate">{c.name}</span>
+                  {c.isDefault && <span className="badge">Built-in</span>}
                 </div>
-
-                {/* Tabs */}
-                <div className="categories-tabs">
+                {!c.isDefault && (
+                  <div className="cat-card__actions">
                     <button
-                        className={`categories-tabs__btn ${activeTab === "expense" ? "categories-tabs__btn--active" : ""}`}
-                        onClick={() => setActiveTab("expense")}
+                      className="icon-btn"
+                      onClick={() => openEdit(c)}
+                      aria-label={`Edit ${c.name}`}
                     >
-                        Expenses
+                      <Pencil size={15} />
                     </button>
                     <button
-                        className={`categories-tabs__btn ${activeTab === "income" ? "categories-tabs__btn--active" : ""}`}
-                        onClick={() => setActiveTab("income")}
+                      className="icon-btn icon-btn--danger"
+                      onClick={() => setPendingDelete(c)}
+                      aria-label={`Delete ${c.name}`}
                     >
-                        Income
+                      <Trash2 size={15} />
                     </button>
-                </div>
-
-                {/* Grid */}
-                {filteredCategories.length === 0 ? (
-                    <div className="categories-empty">
-                        <p>No custom categories found.</p>
-                        <p className="categories-empty__hint">
-                            Create one to start tracking!
-                        </p>
-                    </div>
-                ) : (
-                    <div className="categories-grid">
-                        {filteredCategories.map((cat) => (
-                            <div key={cat._id} className="category-card">
-                                <div
-                                    className="category-card__icon"
-                                    style={{ backgroundColor: `${cat.color}20`, color: cat.color }}
-                                >
-                                    <IconComponent name={cat.icon} size={20} />
-                                </div>
-                                <div className="category-card__details">
-                                    <div className="category-card__name">
-                                        {cat.name}
-                                        {cat.isDefault && (
-                                            <span className="category-card__badge">Default</span>
-                                        )}
-                                    </div>
-                                </div>
-                                {!cat.isDefault && (
-                                    <div className="category-card__actions">
-                                        <button
-                                            className="category-card__action-btn"
-                                            onClick={() => startEdit(cat)}
-                                        >
-                                            <Pencil size={14} />
-                                        </button>
-                                        <button
-                                            className="category-card__action-btn category-card__action-btn--delete"
-                                            onClick={() => handleDelete(cat._id)}
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
+                  </div>
                 )}
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </motion.ul>
+      )}
 
-                {/* Modal */}
-                {showModal && (
-                    <div className="budget-form-card" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '500px', zIndex: 1000, maxHeight: '90vh', overflowY: 'auto' }}>
-                        <div className="budget-form-card__header">
-                            <h3>{editingId ? "Edit Category" : `New ${activeTab === 'income' ? 'Income' : 'Expense'} Category`}</h3>
-                            <button className="modal__close" onClick={resetForm}>
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <form className="budget-form" onSubmit={handleSubmit}>
-                            <div className="cat-form__group">
-                                <label className="cat-form__label">Category Name</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    value={formName}
-                                    onChange={(e) => setFormName(e.target.value)}
-                                    placeholder="e.g., Gym, Side Hustle"
-                                    required
-                                />
-                            </div>
+      <Sheet
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title={
+          editing
+            ? "Edit category"
+            : `New ${tab === "income" ? "income" : "expense"} category`
+        }
+        footer={
+          <button
+            className="btn btn--accent btn--block"
+            form="category-form"
+            type="submit"
+            disabled={!name.trim()}
+          >
+            {editing ? "Save changes" : "Create category"}
+          </button>
+        }
+      >
+        <form id="category-form" className="budget-form" onSubmit={handleSubmit}>
+          <div className="cat-preview">
+            <CategoryIcon name={icon} color={color} size={24} tileSize={56} />
+            <span className="cat-preview__name">
+              {name.trim() || "Category name"}
+            </span>
+          </div>
 
-                            <div className="color-picker">
-                                <label className="color-picker__label">Color</label>
-                                <div className="color-picker__row">
-                                    {AVAILABLE_COLORS.map((c) => (
-                                        <button
-                                            key={c}
-                                            type="button"
-                                            className={`color-picker__swatch ${formColor === c ? "color-picker__swatch--selected" : ""}`}
-                                            style={{ backgroundColor: c, color: c }}
-                                            onClick={() => setFormColor(c)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
+          <div className="field">
+            <label className="field__label" htmlFor="cat-name">
+              Name
+            </label>
+            <input
+              id="cat-name"
+              type="text"
+              className="form-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Gym, Side hustle"
+              maxLength={40}
+              required
+            />
+          </div>
 
-                            <div className="icon-picker">
-                                <label className="icon-picker__label">Icon</label>
-                                <div className="icon-picker__grid">
-                                    {AVAILABLE_ICONS.map((iconName) => (
-                                        <button
-                                            key={iconName}
-                                            type="button"
-                                            className={`icon-picker__item ${formIcon === iconName ? "icon-picker__item--selected" : ""}`}
-                                            onClick={() => setFormIcon(iconName)}
-                                        >
-                                            <IconComponent name={iconName} size={20} />
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <button type="submit" className="btn btn--accent" style={{ marginTop: '1rem' }}>
-                                {editingId ? "Save Changes" : "Create Category"}
-                            </button>
-                        </form>
-                    </div>
-                )}
-
-                {/* Backdrop for modal */}
-                {showModal && (
-                    <div
-                        className="sidebar-overlay"
-                        style={{ display: 'block', zIndex: 999 }}
-                        onClick={resetForm}
-                    />
-                )}
+          <div className="field">
+            <span className="field__label">Colour</span>
+            <div className="swatches">
+              {COLOR_CHOICES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`swatch ${color === c ? "swatch--active" : ""}`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => {
+                    haptic("light");
+                    setColor(c);
+                  }}
+                  aria-label={`Colour ${c}`}
+                >
+                  {color === c && <Check size={13} />}
+                </button>
+              ))}
             </div>
-        </DashboardLayout>
-    );
+          </div>
+
+          <div className="field">
+            <span className="field__label">Icon</span>
+            <div className="icon-grid">
+              {ICON_CHOICES.map((choice) => (
+                <button
+                  key={choice}
+                  type="button"
+                  className={`icon-choice ${icon === choice ? "icon-choice--active" : ""}`}
+                  onClick={() => {
+                    haptic("light");
+                    setIcon(choice);
+                  }}
+                  aria-label={choice}
+                  style={
+                    icon === choice
+                      ? ({ "--cat-color": color } as React.CSSProperties)
+                      : undefined
+                  }
+                >
+                  <CategoryIcon
+                    name={choice}
+                    color={icon === choice ? color : "currentColor"}
+                    size={18}
+                    tile={false}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        </form>
+      </Sheet>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete category?"
+        message={`"${pendingDelete?.name}" will be removed. Categories with transactions attached can't be deleted.`}
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+    </div>
+  );
 }
