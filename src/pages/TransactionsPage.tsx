@@ -63,6 +63,7 @@ export default function TransactionsPage() {
   );
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const fileRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const queryArgs: {
     type?: "income" | "expense";
@@ -94,6 +95,24 @@ export default function TransactionsPage() {
       );
     });
   }, [transactions, search, categoryFilter, categoryById]);
+
+  // "/" jumps to search, the way most list views behave.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        (el.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))
+      )
+        return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Reset paging whenever the result set changes underneath us.
   useEffect(() => {
@@ -263,6 +282,7 @@ export default function TransactionsPage() {
         <div className="search-field">
           <Search size={16} className="search-field__icon" />
           <input
+            ref={searchRef}
             type="search"
             className="search-field__input"
             value={search}

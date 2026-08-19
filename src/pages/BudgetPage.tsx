@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   CheckCircle2,
+  Copy,
   Pencil,
   Plus,
   Repeat,
@@ -52,6 +53,18 @@ export default function BudgetPage() {
 
   const budgets = useQuery(api.budgets.getBudgetsWithSpending, { month });
 
+  // Offered as a one-tap starting point when a month is still empty.
+  const previousMonth = monthKey(
+    new Date(selectedYear, selectedMonth - 1, 1).getFullYear(),
+    new Date(selectedYear, selectedMonth - 1, 1).getMonth()
+  );
+  const previousBudgets =
+    useQuery(
+      api.budgets.getBudgetsWithSpending,
+      budgets && budgets.length === 0 ? { month: previousMonth } : "skip"
+    ) ?? [];
+  const [copying, setCopying] = useState(false);
+
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<BudgetRow | null>(null);
   const [formCategory, setFormCategory] = useState("");
@@ -83,6 +96,27 @@ export default function BudgetPage() {
     ? Math.max(1, daysInMonth - now.getDate() + 1)
     : daysInMonth;
   const dailyAllowance = Math.max(0, totals.remaining) / daysLeft;
+
+  const copyPreviousMonth = async () => {
+    setCopying(true);
+    try {
+      for (const b of previousBudgets) {
+        await addBudget({
+          categoryId: b.categoryId,
+          amount: b.budgetAmount,
+          month,
+          isRecurring: false,
+        });
+      }
+      haptic("success");
+      toast.success(`Copied ${previousBudgets.length} budgets`);
+    } catch {
+      haptic("error");
+      toast.error("Couldn't copy those budgets");
+    } finally {
+      setCopying(false);
+    }
+  };
 
   const stepMonth = (delta: number) => {
     const next = new Date(selectedYear, selectedMonth + delta, 1);
@@ -196,9 +230,23 @@ export default function BudgetPage() {
             title={`No budgets for ${MONTH_NAMES[selectedMonth]}`}
             description="Set a spending limit per category and FinHash will warn you before you go over."
             action={
-              <button className="btn btn--accent btn--sm" onClick={openCreate}>
-                Set your first budget
-              </button>
+              <div className="budget-empty__actions">
+                <button className="btn btn--accent btn--sm" onClick={openCreate}>
+                  Set your first budget
+                </button>
+                {previousBudgets.length > 0 && (
+                  <button
+                    className="btn btn--secondary btn--sm"
+                    onClick={copyPreviousMonth}
+                    disabled={copying}
+                  >
+                    <Copy size={15} />
+                    {copying
+                      ? "Copying…"
+                      : `Copy ${MONTH_NAMES[new Date(selectedYear, selectedMonth - 1, 1).getMonth()]}`}
+                  </button>
+                )}
+              </div>
             }
           />
         </div>
@@ -293,27 +341,21 @@ export default function BudgetPage() {
                             {b.categoryName}
                           </Link>
                           <span className="budget-card__sub">
-                            {remaining >= 0
-                              ? `${format(remaining)} left`
-                              : `${format(-remaining)} over`}
+                            <span className="truncate">
+                              {remaining >= 0
+                                ? `${format(remaining)} left`
+                                : `${format(-remaining)} over`}
+                            </span>
                             {b.isRecurring && (
-                              <span className="budget-card__repeat" title="Recurring">
+                              <span
+                                className="budget-card__repeat"
+                                title="Repeats every month"
+                              >
                                 <Repeat size={11} /> monthly
                               </span>
                             )}
                           </span>
                         </div>
-
-                        <span className={`badge badge--${statusTone(b.status)}`}>
-                          {b.status === "exceeded" ? (
-                            <AlertTriangle size={11} />
-                          ) : b.status === "warning" ? (
-                            <AlertTriangle size={11} />
-                          ) : (
-                            <CheckCircle2 size={11} />
-                          )}
-                          {b.percentage.toFixed(0)}%
-                        </span>
 
                         <div className="budget-card__actions">
                           <button
@@ -339,10 +381,20 @@ export default function BudgetPage() {
                         delay={0.08 * i}
                       />
 
-                      <div className="budget-card__foot money">
-                        <span>{format(b.spent)}</span>
-                        <span className="text-muted">
-                          of {format(b.budgetAmount)}
+                      <div className="budget-card__foot">
+                        <span className="budget-card__figures money">
+                          {format(b.spent)}{" "}
+                          <span className="text-muted">
+                            of {format(b.budgetAmount)}
+                          </span>
+                        </span>
+                        <span className={`badge badge--${statusTone(b.status)}`}>
+                          {b.status === "safe" ? (
+                            <CheckCircle2 size={11} />
+                          ) : (
+                            <AlertTriangle size={11} />
+                          )}
+                          {b.percentage.toFixed(0)}%
                         </span>
                       </div>
                     </motion.li>

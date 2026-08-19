@@ -11,6 +11,10 @@ import { useIsMobile } from "../../hooks/useMediaQuery";
 import { haptic } from "../../lib/haptics";
 import { springSoft } from "../../lib/motion";
 
+const FOCUSABLE =
+  "a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), " +
+  "select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+
 interface SheetProps {
   open: boolean;
   onClose: () => void;
@@ -58,23 +62,47 @@ export default function Sheet({
     };
   }, [open]);
 
-  // Escape closes; focus lands inside the panel.
+  // Escape closes, Tab stays inside, and focus returns to the opener on close.
   useEffect(() => {
     if (!open) return;
+
+    const opener = document.activeElement as HTMLElement | null;
+
+    const focusable = () =>
+      Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && dismissible) onClose();
+      if (e.key === "Escape" && dismissible) {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     document.addEventListener("keydown", onKey);
     const timer = window.setTimeout(() => {
-      panelRef.current
-        ?.querySelector<HTMLElement>(
-          "input:not([type=hidden]), select, textarea, button, [tabindex]:not([tabindex='-1'])"
-        )
-        ?.focus({ preventScroll: true });
+      focusable()[0]?.focus({ preventScroll: true });
     }, 120);
+
     return () => {
       document.removeEventListener("keydown", onKey);
       window.clearTimeout(timer);
+      opener?.focus?.({ preventScroll: true });
     };
   }, [open, onClose, dismissible]);
 
