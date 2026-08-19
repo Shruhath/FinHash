@@ -71,7 +71,7 @@ export default function DashboardPage() {
   );
 
   const recentTransactions = useQuery(api.transactions.getRecentTransactions, {
-    limit: 6,
+    limit: 8,
   });
   const categories = useQuery(api.categories.getCategories) ?? [];
   const budgets =
@@ -126,6 +126,11 @@ export default function DashboardPage() {
     0
   );
 
+  const isNewAccount =
+    recentTransactions?.length === 0 &&
+    budgets.length === 0 &&
+    goals.length === 0;
+
   const isCurrentMonth =
     selectedMonth === now.getMonth() && selectedYear === now.getFullYear();
 
@@ -166,6 +171,54 @@ export default function DashboardPage() {
           </h1>
         </div>
       </motion.header>
+
+      {/* ---------- First run ---------- */}
+      {isNewAccount && (
+        <motion.section
+          className="starter"
+          variants={riseVariants}
+          initial="initial"
+          animate="animate"
+        >
+          <div className="starter__glow" aria-hidden />
+          <h2 className="starter__title">Let's get you set up</h2>
+          <p className="starter__text">
+            Three quick steps and your dashboard fills itself in.
+          </p>
+          <ol className="starter__steps">
+            <li>
+              <button className="starter__step" onClick={() => openAdd()}>
+                <span className="starter__step-num">1</span>
+                <span>
+                  <strong>Log a transaction</strong>
+                  <small>Amount, category, done</small>
+                </span>
+                <ArrowRight size={16} />
+              </button>
+            </li>
+            <li>
+              <Link className="starter__step" to="/budget">
+                <span className="starter__step-num">2</span>
+                <span>
+                  <strong>Set a budget</strong>
+                  <small>We'll warn you before you overspend</small>
+                </span>
+                <ArrowRight size={16} />
+              </Link>
+            </li>
+            <li>
+              <Link className="starter__step" to="/goals">
+                <span className="starter__step-num">3</span>
+                <span>
+                  <strong>Name a savings goal</strong>
+                  <small>Watch it fill up as you contribute</small>
+                </span>
+                <ArrowRight size={16} />
+              </Link>
+            </li>
+          </ol>
+        </motion.section>
+      )}
 
       {/* ---------- Period controls ---------- */}
       <div className="dash__controls">

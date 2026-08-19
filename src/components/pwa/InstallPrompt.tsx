@@ -47,7 +47,7 @@ export default function InstallPrompt() {
                 Screen
               </span>
             ) : (
-              <span>Full screen, offline-ready, one tap from your home screen</span>
+              <span>Full screen, offline, one tap away</span>
             )}
           </div>
 

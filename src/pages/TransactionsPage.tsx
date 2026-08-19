@@ -235,7 +235,11 @@ export default function TransactionsPage() {
               <ArrowDownToLine size={15} />
               Import
             </button>
-            <button className="btn btn--secondary btn--sm" onClick={exportCsv}>
+            <button
+              className="btn btn--secondary btn--sm"
+              onClick={exportCsv}
+              disabled={!filtered || filtered.length === 0}
+            >
               <ArrowDownToLine size={15} style={{ transform: "rotate(180deg)" }} />
               Export
             </button>
