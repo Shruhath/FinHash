@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowDownToLine,
@@ -44,11 +45,17 @@ export default function TransactionsPage() {
   const { openAdd } = useShell();
   const isMobile = useIsMobile();
 
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // Filters are URL-backed so other pages can link straight into a slice.
+  const [params, setParams] = useSearchParams();
+  const [search, setSearch] = useState(() => params.get("q") ?? "");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>(
+    () => (params.get("type") as TypeFilter) || "all"
+  );
+  const [categoryFilter, setCategoryFilter] = useState(
+    () => params.get("category") ?? ""
+  );
+  const [startDate, setStartDate] = useState(() => params.get("from") ?? "");
+  const [endDate, setEndDate] = useState(() => params.get("to") ?? "");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [editing, setEditing] = useState<Doc<"transactions"> | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Doc<"transactions"> | null>(
@@ -92,6 +99,17 @@ export default function TransactionsPage() {
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [search, typeFilter, categoryFilter, startDate, endDate]);
+
+  // Mirror the active filters back into the URL so the view is shareable.
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (search) next.set("q", search);
+    if (typeFilter !== "all") next.set("type", typeFilter);
+    if (categoryFilter) next.set("category", categoryFilter);
+    if (startDate) next.set("from", startDate);
+    if (endDate) next.set("to", endDate);
+    setParams(next, { replace: true });
+  }, [search, typeFilter, categoryFilter, startDate, endDate, setParams]);
 
   const visible = useMemo(
     () => (filtered ? filtered.slice(0, visibleCount) : undefined),

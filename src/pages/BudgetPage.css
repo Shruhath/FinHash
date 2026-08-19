@@ -148,6 +148,13 @@
   font-size: var(--text-base);
   font-weight: 650;
   color: var(--color-text-primary);
+  transition: color var(--transition-fast);
+}
+
+@media (hover: hover) {
+  a.budget-card__name:hover {
+    color: var(--color-accent);
+  }
 }
 
 .budget-card__sub {

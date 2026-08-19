@@ -1,5 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -24,7 +25,7 @@ import ConfirmDialog from "../components/ui/ConfirmDialog";
 import CategoryIcon from "../components/ui/CategoryIcon";
 import AnimatedNumber from "../components/ui/AnimatedNumber";
 import { SkeletonCard } from "../components/ui/Skeleton";
-import { MONTH_NAMES, MONTH_SHORT, monthKey } from "../lib/format";
+import { MONTH_NAMES, MONTH_SHORT, monthKey, toDateInput } from "../lib/format";
 import { listItemVariants, listVariants } from "../lib/motion";
 import { haptic } from "../lib/haptics";
 import "./BudgetPage.css";
@@ -44,6 +45,10 @@ export default function BudgetPage() {
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const month = monthKey(selectedYear, selectedMonth);
+  const monthStart = toDateInput(new Date(selectedYear, selectedMonth, 1).getTime());
+  const monthEnd = toDateInput(
+    new Date(selectedYear, selectedMonth + 1, 0).getTime()
+  );
 
   const budgets = useQuery(api.budgets.getBudgetsWithSpending, { month });
 
@@ -281,9 +286,12 @@ export default function BudgetPage() {
                           tileSize={38}
                         />
                         <div className="budget-card__title">
-                          <span className="budget-card__name truncate">
+                          <Link
+                            className="budget-card__name truncate"
+                            to={`/transactions?category=${b.categoryId}&type=expense&from=${monthStart}&to=${monthEnd}`}
+                          >
                             {b.categoryName}
-                          </span>
+                          </Link>
                           <span className="budget-card__sub">
                             {remaining >= 0
                               ? `${format(remaining)} left`

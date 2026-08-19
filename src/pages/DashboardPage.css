@@ -331,8 +331,22 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  padding: 6px 0;
+  padding: 6px var(--space-sm);
+  margin: 0 calc(-1 * var(--space-sm));
+  border-radius: var(--radius-sm);
   font-size: var(--text-sm);
+  color: inherit;
+  transition: background-color var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .breakdown__row:hover {
+    background-color: var(--color-bg-hover);
+  }
+}
+
+.breakdown__row:active {
+  background-color: var(--color-bg-hover);
 }
 
 .breakdown__name {

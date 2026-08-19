@@ -47,7 +47,7 @@ export function formatDayLabel(timestamp: number): string {
   const d = new Date(timestamp);
   const sameYear = d.getFullYear() === new Date().getFullYear();
   return d.toLocaleDateString(undefined, {
-    weekday: diff < 7 && diff > 0 ? "long" : undefined,
+    weekday: "short",
     day: "numeric",
     month: "short",
     year: sameYear ? undefined : "numeric",

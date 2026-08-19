@@ -98,6 +98,10 @@ export default function AppShell() {
   return (
     <ShellContext.Provider value={contextValue}>
       <div className={`shell ${collapsed ? "shell--collapsed" : ""}`}>
+        <a className="skip-link" href="#main">
+          Skip to content
+        </a>
+
         {!isMobile && (
           <Sidebar
             collapsed={collapsed}
@@ -108,7 +112,7 @@ export default function AppShell() {
 
         {isMobile && <TopBar onOpenMore={() => setMoreOpen(true)} />}
 
-        <main className="shell__main" id="main">
+        <main className="shell__main" id="main" tabIndex={-1}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}

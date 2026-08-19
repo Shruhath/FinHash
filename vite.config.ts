@@ -45,6 +45,36 @@ export default defineConfig({
             purpose: "maskable",
           },
         ],
+        screenshots: [
+          {
+            src: "/screenshots/mobile-dashboard.png",
+            sizes: "390x844",
+            type: "image/png",
+            form_factor: "narrow",
+            label: "Your month at a glance",
+          },
+          {
+            src: "/screenshots/mobile-transactions.png",
+            sizes: "390x844",
+            type: "image/png",
+            form_factor: "narrow",
+            label: "Every transaction, grouped by day",
+          },
+          {
+            src: "/screenshots/mobile-analytics.png",
+            sizes: "390x844",
+            type: "image/png",
+            form_factor: "narrow",
+            label: "Trends and category breakdowns",
+          },
+          {
+            src: "/screenshots/desktop-dashboard.png",
+            sizes: "1280x800",
+            type: "image/png",
+            form_factor: "wide",
+            label: "FinHash on the desktop",
+          },
+        ],
         shortcuts: [
           {
             name: "Add transaction",
@@ -68,6 +98,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        // Store listing art doesn't need to sit in the offline cache.
+        globIgnores: ["**/screenshots/**"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,

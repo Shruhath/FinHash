@@ -70,6 +70,7 @@
 }
 
 .filter-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--space-sm);
@@ -112,6 +113,13 @@
     width: 44px;
     justify-content: center;
     padding: 0;
+  }
+  /* With the label gone the count becomes a corner badge */
+  .filter-btn__count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    box-shadow: 0 0 0 2px var(--color-bg-primary);
   }
 }
 

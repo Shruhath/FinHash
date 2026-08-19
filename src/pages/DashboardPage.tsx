@@ -101,6 +101,7 @@ export default function DashboardPage() {
       .map(([catId, amount]) => {
         const cat = categoryById.get(catId);
         return {
+          id: catId,
           name: cat?.name ?? "Uncategorised",
           icon: cat?.icon,
           value: amount as number,
@@ -387,29 +388,30 @@ export default function DashboardPage() {
                 animate="animate"
               >
                 {chartData.map((entry) => (
-                  <motion.li
-                    className="breakdown__row"
-                    key={entry.name}
-                    variants={listItemVariants}
-                  >
-                    <CategoryIcon
-                      name={entry.icon}
-                      color={entry.color}
-                      size={15}
-                      tileSize={30}
-                    />
-                    <span className="breakdown__name truncate">
-                      {entry.name}
-                    </span>
-                    <span className="breakdown__pct money">
-                      {chartTotal > 0
-                        ? ((entry.value / chartTotal) * 100).toFixed(0)
-                        : 0}
-                      %
-                    </span>
-                    <span className="breakdown__value money">
-                      {format(entry.value)}
-                    </span>
+                  <motion.li key={entry.id} variants={listItemVariants}>
+                    <Link
+                      className="breakdown__row"
+                      to={`/transactions?category=${entry.id}&type=expense`}
+                    >
+                      <CategoryIcon
+                        name={entry.icon}
+                        color={entry.color}
+                        size={15}
+                        tileSize={30}
+                      />
+                      <span className="breakdown__name truncate">
+                        {entry.name}
+                      </span>
+                      <span className="breakdown__pct money">
+                        {chartTotal > 0
+                          ? ((entry.value / chartTotal) * 100).toFixed(0)
+                          : 0}
+                        %
+                      </span>
+                      <span className="breakdown__value money">
+                        {format(entry.value)}
+                      </span>
+                    </Link>
                   </motion.li>
                 ))}
               </motion.ul>
