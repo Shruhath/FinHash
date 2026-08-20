@@ -51,3 +51,10 @@ convex_firebase_setup_guide.md
 # local UI preview harness
 preview/
 vite.preview.config.ts
+
+# Vercel
+.vercel
+
+# Env files (the tracked mobile/.env.example is the documented template)
+.env*
+!*.env.example
