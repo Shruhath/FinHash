@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Platform, View } from "react-native";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import { View } from "react-native";
 import { useMutation, useQuery } from "convex/react";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { CalendarDays, Plus, Split, Target, Trash2 } from "lucide-react-native";
+import { Plus, Split, Target, Trash2 } from "lucide-react-native";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import Sheet from "../ui/Sheet";
@@ -16,6 +13,7 @@ import Chip from "../ui/Chip";
 import Field from "../ui/Field";
 import TextField from "../ui/TextField";
 import AmountInput from "../ui/AmountInput";
+import DateField from "../ui/DateField";
 import SegmentedControl from "../ui/SegmentedControl";
 import CategoryPicker from "./CategoryPicker";
 import Select from "../ui/Select";
@@ -66,7 +64,6 @@ export default function AddTransactionSheet({ open, onClose, preset }: Props) {
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date());
-  const [showPicker, setShowPicker] = useState(false);
   const [goalId, setGoalId] = useState("");
   const [isSplit, setIsSplit] = useState(false);
   const [splits, setSplits] = useState<SplitRow[]>(emptySplits);
@@ -84,7 +81,6 @@ export default function AddTransactionSheet({ open, onClose, preset }: Props) {
     setIsSplit(false);
     setSplits(emptySplits());
     setSaving(false);
-    setShowPicker(false);
   }, [open, preset]);
 
   const filteredCategories = useMemo(
@@ -183,12 +179,6 @@ export default function AddTransactionSheet({ open, onClose, preset }: Props) {
     }
   };
 
-  const onDateChange = (event: DateTimePickerEvent, next?: Date) => {
-    if (Platform.OS === "android") setShowPicker(false);
-    if (event.type === "dismissed" || !next) return;
-    setDate(next);
-  };
-
   return (
     <Sheet
       open={open}
@@ -249,35 +239,12 @@ export default function AddTransactionSheet({ open, onClose, preset }: Props) {
           ))}
         </View>
 
-        <Button
-          label={date.toLocaleString(undefined, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })}
-          variant="secondary"
-          block
-          icon={<CalendarDays size={16} color={colors.textSecondary} />}
-          onPress={() => setShowPicker(true)}
+        <DateField
+          value={date}
+          onChange={setDate}
+          mode="datetime"
+          maximumDate={new Date(Date.now() + 365 * DAY)}
         />
-
-        {showPicker ? (
-          <DateTimePicker
-            value={date}
-            mode="datetime"
-            display={Platform.OS === "ios" ? "inline" : "default"}
-            onChange={onDateChange}
-            themeVariant={colors.bg === "#000000" ? "dark" : "light"}
-            accentColor={colors.accent}
-            maximumDate={new Date(Date.now() + 365 * DAY)}
-          />
-        ) : null}
-
-        {Platform.OS === "ios" && showPicker ? (
-          <Button label="Done" variant="ghost" onPress={() => setShowPicker(false)} />
-        ) : null}
       </Field>
 
       <Switch

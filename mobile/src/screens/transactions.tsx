@@ -215,7 +215,6 @@ export default function TransactionsScreen() {
         contentContainerStyle={{
           paddingHorizontal: space.lg,
           paddingBottom: layout.tabBarHeight + insets.bottom + space["2xl"],
-          gap: space.sm,
         }}
         ListHeaderComponent={
           <View style={{ gap: space.lg, paddingTop: space.md, paddingBottom: space.sm }}>

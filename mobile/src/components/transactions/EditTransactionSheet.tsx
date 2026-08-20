@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Platform, View } from "react-native";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import { View } from "react-native";
 import { useMutation, useQuery } from "convex/react";
-import { CalendarDays, Trash2 } from "lucide-react-native";
+import { Trash2 } from "lucide-react-native";
 import { api } from "@convex/_generated/api";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import Sheet from "../ui/Sheet";
@@ -12,6 +9,7 @@ import Button from "../ui/Button";
 import Field from "../ui/Field";
 import TextField from "../ui/TextField";
 import AmountInput from "../ui/AmountInput";
+import DateField from "../ui/DateField";
 import SegmentedControl from "../ui/SegmentedControl";
 import CategoryPicker from "./CategoryPicker";
 import { useToast } from "../ui/Toast";
@@ -39,7 +37,6 @@ export default function EditTransactionSheet({ transaction, onClose, onDelete }:
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date());
-  const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -50,7 +47,6 @@ export default function EditTransactionSheet({ transaction, onClose, onDelete }:
     setDescription(transaction.description ?? "");
     setDate(new Date(transaction.date));
     setSaving(false);
-    setShowPicker(false);
   }, [transaction]);
 
   const filteredCategories = useMemo(
@@ -79,12 +75,6 @@ export default function EditTransactionSheet({ transaction, onClose, onDelete }:
     } finally {
       setSaving(false);
     }
-  };
-
-  const onDateChange = (event: DateTimePickerEvent, next?: Date) => {
-    if (Platform.OS === "android") setShowPicker(false);
-    if (event.type === "dismissed" || !next) return;
-    setDate(next);
   };
 
   return (
@@ -154,34 +144,7 @@ export default function EditTransactionSheet({ transaction, onClose, onDelete }:
       </Field>
 
       <Field label="Date & time">
-        <Button
-          label={date.toLocaleString(undefined, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })}
-          variant="secondary"
-          block
-          icon={<CalendarDays size={16} color={colors.textSecondary} />}
-          onPress={() => setShowPicker(true)}
-        />
-        {showPicker ? (
-          <View>
-            <DateTimePicker
-              value={date}
-              mode="datetime"
-              display={Platform.OS === "ios" ? "inline" : "default"}
-              onChange={onDateChange}
-              themeVariant={colors.bg === "#000000" ? "dark" : "light"}
-              accentColor={colors.accent}
-            />
-            {Platform.OS === "ios" ? (
-              <Button label="Done" variant="ghost" onPress={() => setShowPicker(false)} />
-            ) : null}
-          </View>
-        ) : null}
+        <DateField value={date} onChange={setDate} mode="datetime" />
       </Field>
 
       <View style={{ height: space.sm }} />

@@ -12,3 +12,6 @@ expo-env.d.ts
 .DS_Store
 .env
 .env.local
+
+# local web preview harness
+preview/

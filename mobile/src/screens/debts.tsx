@@ -1,8 +1,5 @@
 import { useMemo, useState } from "react";
-import { Platform, View } from "react-native";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import { View } from "react-native";
 import { useMutation, useQuery } from "convex/react";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,7 +7,6 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   CalendarClock,
-  CalendarDays,
   Check,
   ChevronDown,
   HandCoins,
@@ -33,6 +29,7 @@ import Sheet from "@/components/ui/Sheet";
 import Select from "@/components/ui/Select";
 import TextField from "@/components/ui/TextField";
 import AmountInput from "@/components/ui/AmountInput";
+import DateField from "@/components/ui/DateField";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import EmptyState from "@/components/ui/EmptyState";
@@ -66,7 +63,6 @@ export default function DebtsScreen() {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date | null>(null);
-  const [showPicker, setShowPicker] = useState(false);
   const [settling, setSettling] = useState<Debt | null>(null);
   const [settleCategory, setSettleCategory] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Debt | null>(null);
@@ -179,12 +175,6 @@ export default function DebtsScreen() {
       haptic("error");
       toast.error("Couldn't remove that debt");
     }
-  };
-
-  const onDateChange = (event: DateTimePickerEvent, next?: Date) => {
-    if (Platform.OS === "android") setShowPicker(false);
-    if (event.type === "dismissed" || !next) return;
-    setDueDate(next);
   };
 
   const settleCategories = categories.filter(
@@ -422,34 +412,16 @@ export default function DebtsScreen() {
         </Field>
 
         <Field label="Due date">
-          <View style={{ flexDirection: "row", gap: space.sm }}>
-            <Button
-              block
-              style={{ flex: 1 }}
-              variant="secondary"
-              label={dueDate ? dueDate.toLocaleDateString() : "No due date"}
-              icon={<CalendarDays size={15} color={colors.textSecondary} />}
-              onPress={() => setShowPicker(true)}
-            />
-            {dueDate ? (
-              <Button label="Clear" variant="ghost" onPress={() => setDueDate(null)} />
-            ) : null}
-          </View>
-          {showPicker ? (
-            <View>
-              <DateTimePicker
-                value={dueDate ?? new Date()}
-                mode="date"
-                display={Platform.OS === "ios" ? "inline" : "default"}
-                onChange={onDateChange}
-                themeVariant={colors.bg === "#000000" ? "dark" : "light"}
-                accentColor={colors.accent}
-              />
-              {Platform.OS === "ios" ? (
-                <Button label="Done" variant="ghost" onPress={() => setShowPicker(false)} />
-              ) : null}
-            </View>
-          ) : null}
+          <DateField
+            value={dueDate}
+            onChange={setDueDate}
+            placeholder="No due date"
+            trailing={
+              dueDate ? (
+                <Button label="Clear" variant="ghost" onPress={() => setDueDate(null)} />
+              ) : undefined
+            }
+          />
         </Field>
 
         <View style={{ height: space.sm }} />

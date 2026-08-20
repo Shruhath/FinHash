@@ -29,4 +29,28 @@ config.resolver.extraNodeModules = {
 
 config.resolver.disableHierarchicalLookup = false;
 
+// `bun run preview` swaps Convex and Firebase for fixtures so the whole UI can
+// be rendered in a browser without a backend or a signed-in account.
+if (process.env.EXPO_PUBLIC_PREVIEW === "1") {
+  const previewRoot = path.resolve(projectRoot, "preview");
+  config.watchFolders.push(previewRoot);
+
+  const original = config.resolver.resolveRequest;
+  config.resolver.resolveRequest = (context, moduleName, platform) => {
+    if (moduleName === "convex/react") {
+      return {
+        type: "sourceFile",
+        filePath: path.resolve(previewRoot, "mock-convex.tsx"),
+      };
+    }
+    if (moduleName.endsWith("/lib/firebase") || moduleName === "@/lib/firebase") {
+      return {
+        type: "sourceFile",
+        filePath: path.resolve(previewRoot, "mock-firebase.ts"),
+      };
+    }
+    return (original ?? context.resolveRequest)(context, moduleName, platform);
+  };
+}
+
 module.exports = config;

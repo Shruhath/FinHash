@@ -66,6 +66,11 @@
       "eas": {
         "projectId": ""
       }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/notification-icon.png"
     }
   }
 }

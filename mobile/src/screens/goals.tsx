@@ -1,13 +1,9 @@
 import { useMemo, useState } from "react";
-import { Platform, View } from "react-native";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import { View } from "react-native";
 import { useMutation, useQuery } from "convex/react";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import {
   CalendarClock,
-  CalendarDays,
   Check,
   ChevronDown,
   Pencil,
@@ -31,6 +27,7 @@ import Field from "@/components/ui/Field";
 import Sheet from "@/components/ui/Sheet";
 import TextField from "@/components/ui/TextField";
 import AmountInput from "@/components/ui/AmountInput";
+import DateField from "@/components/ui/DateField";
 import Overview from "@/components/ui/Overview";
 import ProgressRing from "@/components/ui/ProgressRing";
 import EmptyState from "@/components/ui/EmptyState";
@@ -63,7 +60,6 @@ export default function GoalsScreen() {
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
   const [targetDate, setTargetDate] = useState(new Date());
-  const [showPicker, setShowPicker] = useState(false);
   const [description, setDescription] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Goal | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -138,12 +134,6 @@ export default function GoalsScreen() {
       haptic("error");
       toast.error("Couldn't delete that goal");
     }
-  };
-
-  const onDateChange = (event: DateTimePickerEvent, next?: Date) => {
-    if (Platform.OS === "android") setShowPicker(false);
-    if (event.type === "dismissed" || !next) return;
-    setTargetDate(next);
   };
 
   return (
@@ -419,33 +409,11 @@ export default function GoalsScreen() {
         </Field>
 
         <Field label="Target date">
-          <Button
-            block
-            variant="secondary"
-            label={targetDate.toLocaleDateString(undefined, {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-            icon={<CalendarDays size={16} color={colors.textSecondary} />}
-            onPress={() => setShowPicker(true)}
+          <DateField
+            value={targetDate}
+            onChange={setTargetDate}
+            minimumDate={new Date()}
           />
-          {showPicker ? (
-            <View>
-              <DateTimePicker
-                value={targetDate}
-                mode="date"
-                display={Platform.OS === "ios" ? "inline" : "default"}
-                minimumDate={new Date()}
-                onChange={onDateChange}
-                themeVariant={colors.bg === "#000000" ? "dark" : "light"}
-                accentColor={colors.accent}
-              />
-              {Platform.OS === "ios" ? (
-                <Button label="Done" variant="ghost" onPress={() => setShowPicker(false)} />
-              ) : null}
-            </View>
-          ) : null}
 
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
             {[3, 6, 12, 24].map((months) => (
