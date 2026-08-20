@@ -247,8 +247,12 @@
 }
 
 /* ---------- Stat strip ---------- */
+/* Auto columns keep every tile identical in width, whatever the label says,
+   and let the strip scroll rather than squeeze when they no longer fit. */
 .stat-strip {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(120px, 1fr);
   gap: var(--space-sm);
   overflow-x: auto;
   scrollbar-width: none;
@@ -264,8 +268,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1 0 auto;
-  min-width: 116px;
+  min-width: 0;
   padding: var(--space-md);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-card);
@@ -282,6 +285,9 @@
   font-size: var(--text-md);
   font-weight: 700;
   color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-tile__label {
@@ -290,6 +296,9 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Grid ---------- */

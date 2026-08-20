@@ -62,10 +62,12 @@ export default function GoalsPage() {
   const totals = useMemo(() => {
     const saved = active.reduce((s, g) => s + g.currentAmount, 0);
     const targetSum = active.reduce((s, g) => s + g.targetAmount, 0);
+    const nextUp = [...active].sort((a, b) => a.targetDate - b.targetDate)[0];
     return {
       saved,
       target: targetSum,
       percentage: targetSum > 0 ? (saved / targetSum) * 100 : 0,
+      nextUp,
     };
   }, [active]);
 
@@ -163,32 +165,49 @@ export default function GoalsPage() {
         <>
           {active.length > 0 && (
             <motion.section
-              className="goals-summary"
+              className="overview"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
             >
-              <div className="goals-summary__main">
-                <span className="goals-summary__label">Saved so far</span>
-                <AnimatedNumber
-                  className="goals-summary__value money"
-                  value={totals.saved}
-                  format={format}
-                />
-                <span className="goals-summary__sub">
-                  of {format(totals.target)} across {active.length} goal
-                  {active.length === 1 ? "" : "s"}
-                </span>
-              </div>
-              <ProgressRing
-                value={totals.percentage}
-                size={92}
-                thickness={9}
-              >
-                <span className="goals-summary__ring money">
+              <ProgressRing value={totals.percentage} size={116} thickness={11}>
+                <span className="overview__ring-value money">
                   {totals.percentage.toFixed(0)}%
                 </span>
+                <span className="overview__ring-label">funded</span>
               </ProgressRing>
+
+              <div className="overview__facts">
+                <div className="fact">
+                  <span className="fact__label">Saved so far</span>
+                  <AnimatedNumber
+                    className="fact__value money"
+                    value={totals.saved}
+                    format={format}
+                  />
+                </div>
+                <div className="fact">
+                  <span className="fact__label">
+                    Across {active.length} goal{active.length === 1 ? "" : "s"}
+                  </span>
+                  <span className="fact__value money">
+                    {format(totals.target)}
+                  </span>
+                </div>
+                <div className="fact">
+                  <span className="fact__label">Next deadline</span>
+                  <span className="fact__value">
+                    {totals.nextUp?.name ?? "—"}
+                  </span>
+                  {totals.nextUp && (
+                    <span className="fact__hint">
+                      {totals.nextUp.isOverdue
+                        ? "Past due"
+                        : formatDaysLeft(totals.nextUp.daysLeft)}
+                    </span>
+                  )}
+                </div>
+              </div>
             </motion.section>
           )}
 

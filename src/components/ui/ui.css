@@ -583,3 +583,106 @@
   line-height: 1.55;
   margin-bottom: var(--space-sm);
 }
+
+
+/* ============================================================
+   Overview card — the summary banner on Budget and Goals
+   ============================================================ */
+.overview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xl);
+  padding: var(--space-xl);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-light);
+  background:
+    radial-gradient(
+      110% 130% at 0% 0%,
+      rgba(204, 85, 0, 0.16) 0%,
+      rgba(204, 85, 0, 0) 55%
+    ),
+    linear-gradient(165deg, var(--color-bg-elevated), var(--color-bg-card) 60%);
+  box-shadow: var(--shadow-sm);
+}
+
+.overview__ring-value {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+
+.overview__ring-label {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.overview__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-lg);
+  flex: 1;
+  align-items: start;
+}
+
+.overview__facts--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fact__label {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.fact__value {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fact__hint {
+  font-size: var(--text-2xs);
+  color: var(--color-text-faint);
+}
+
+@media (max-width: 640px) {
+  .overview {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-lg);
+    padding: var(--space-lg);
+  }
+
+  .overview .progress-ring {
+    margin: 0 auto;
+  }
+
+  .overview__facts {
+    gap: var(--space-sm);
+  }
+
+  .fact {
+    align-items: center;
+    text-align: center;
+  }
+
+  .fact__value {
+    font-size: var(--text-base);
+  }
+}

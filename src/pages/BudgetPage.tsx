@@ -254,7 +254,7 @@ export default function BudgetPage() {
         <>
           {/* ---------- Overview ---------- */}
           <motion.section
-            className="budget-overview"
+            className="overview"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
@@ -271,36 +271,38 @@ export default function BudgetPage() {
                     : "var(--color-accent)"
               }
             >
-              <span className="budget-overview__pct money">
+              <span className="overview__ring-value money">
                 {totals.percentage.toFixed(0)}%
               </span>
-              <span className="budget-overview__pct-label">used</span>
+              <span className="overview__ring-label">used</span>
             </ProgressRing>
 
-            <div className="budget-overview__facts">
-              <div className="budget-fact">
-                <span className="budget-fact__label">
+            <div
+              className={`overview__facts ${isCurrentMonth ? "" : "overview__facts--two"}`}
+            >
+              <div className="fact">
+                <span className="fact__label">
                   {totals.remaining >= 0 ? "Remaining" : "Over budget"}
                 </span>
                 <AnimatedNumber
-                  className={`budget-fact__value money ${totals.remaining < 0 ? "text-expense" : ""}`}
+                  className={`fact__value money ${totals.remaining < 0 ? "text-expense" : ""}`}
                   value={Math.abs(totals.remaining)}
                   format={format}
                 />
               </div>
-              <div className="budget-fact">
-                <span className="budget-fact__label">Budgeted</span>
-                <span className="budget-fact__value money">
+              <div className="fact">
+                <span className="fact__label">Budgeted</span>
+                <span className="fact__value money">
                   {format(totals.budgeted)}
                 </span>
               </div>
               {isCurrentMonth && (
-                <div className="budget-fact">
-                  <span className="budget-fact__label">Safe per day</span>
-                  <span className="budget-fact__value money">
+                <div className="fact">
+                  <span className="fact__label">Safe per day</span>
+                  <span className="fact__value money">
                     {compact(dailyAllowance)}
                   </span>
-                  <span className="budget-fact__hint">{daysLeft} days left</span>
+                  <span className="fact__hint">{daysLeft} days left</span>
                 </div>
               )}
             </div>
