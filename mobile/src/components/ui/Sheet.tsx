@@ -1,10 +1,12 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 import { Platform, View } from "react-native";
-import BottomSheet, {
+import {
   BottomSheetBackdrop,
+  BottomSheetFooter,
+  BottomSheetModal,
   BottomSheetScrollView,
-  BottomSheetView,
   type BottomSheetBackdropProps,
+  type BottomSheetFooterProps,
 } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
@@ -12,6 +14,9 @@ import Text from "./Text";
 import IconButton from "./IconButton";
 import { radius, space, useTheme } from "@/theme";
 import { haptic } from "@/lib/haptics";
+
+/** Roughly one large button plus its padding — reserves scroll room. */
+const FOOTER_HEIGHT = 78;
 
 interface Props {
   open: boolean;
@@ -27,8 +32,8 @@ interface Props {
 }
 
 /**
- * One dialog primitive for the whole app. Content scrolls inside the sheet
- * while the handle and header remain draggable, matching the web behaviour.
+ * One dialog primitive for the whole app. Uses the modal variant so the sheet
+ * is portalled above the floating tab bar rather than trapped inside a screen.
  */
 export default function Sheet({
   open,
@@ -42,12 +47,12 @@ export default function Sheet({
 }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const ref = useRef<BottomSheet>(null);
+  const ref = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => [snapPoint], [snapPoint]);
 
   useEffect(() => {
-    if (open) ref.current?.expand();
-    else ref.current?.close();
+    if (open) ref.current?.present();
+    else ref.current?.dismiss();
   }, [open]);
 
   const handleClose = useCallback(() => {
@@ -69,17 +74,43 @@ export default function Sheet({
     [colors.scrim, dismissible]
   );
 
+  // Footers have to go through the library's slot — rendering one as a sibling
+  // of the scroll view leaves it absolutely positioned over the header.
+  const renderFooter = useCallback(
+    (props: BottomSheetFooterProps) =>
+      footer ? (
+        <BottomSheetFooter {...props} bottomInset={0}>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: space.sm,
+              paddingHorizontal: space.lg,
+              paddingTop: space.md,
+              paddingBottom: insets.bottom + (Platform.OS === "ios" ? space.sm : space.md),
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+              backgroundColor: colors.bgSecondary,
+            }}
+          >
+            {footer}
+          </View>
+        </BottomSheetFooter>
+      ) : null,
+    [footer, colors.border, colors.bgSecondary, insets.bottom]
+  );
+
   if (!open) return null;
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={ref}
       index={0}
       snapPoints={snapPoints}
       enablePanDownToClose={dismissible}
       enableDynamicSizing={false}
-      onClose={onClose}
+      onDismiss={onClose}
       backdropComponent={renderBackdrop}
+      footerComponent={footer ? renderFooter : undefined}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
@@ -100,7 +131,7 @@ export default function Sheet({
       }}
     >
       {title || dismissible ? (
-        <BottomSheetView
+        <View
           style={{
             flexDirection: "row",
             alignItems: "flex-start",
@@ -130,7 +161,7 @@ export default function Sheet({
               onPress={handleClose}
             />
           ) : null}
-        </BottomSheetView>
+        </View>
       ) : null}
 
       <BottomSheetScrollView
@@ -138,29 +169,14 @@ export default function Sheet({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: space.lg,
-          paddingBottom: footer ? space.lg : insets.bottom + space.xl,
+          paddingBottom: footer
+            ? FOOTER_HEIGHT + insets.bottom + space.lg
+            : insets.bottom + space.xl,
           gap: space.lg,
         }}
       >
         {children}
       </BottomSheetScrollView>
-
-      {footer ? (
-        <BottomSheetView
-          style={{
-            flexDirection: "row",
-            gap: space.sm,
-            paddingHorizontal: space.lg,
-            paddingTop: space.md,
-            paddingBottom: insets.bottom + (Platform.OS === "ios" ? space.sm : space.md),
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            backgroundColor: colors.bgSecondary,
-          }}
-        >
-          {footer}
-        </BottomSheetView>
-      ) : null}
-    </BottomSheet>
+    </BottomSheetModal>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { View } from "react-native";
-import Svg, { Circle, G } from "react-native-svg";
+import Svg, { Circle } from "react-native-svg";
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -116,19 +116,20 @@ function Segment({
     strokeDasharray: [segment.length * sweep.value, circumference],
   }));
 
+  // A plain SVG rotate keeps this valid on both native and the web build;
+  // `<G rotation origin>` renders an invalid DOM attribute under react-native-web.
   return (
-    <G rotation={segment.rotation} origin={`${size / 2}, ${size / 2}`}>
-      <AnimatedCircle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke={segment.color}
-        strokeWidth={thickness}
-        strokeLinecap="butt"
-        opacity={dimmed ? 0.25 : 1}
-        animatedProps={animatedProps}
-      />
-    </G>
+    <AnimatedCircle
+      cx={size / 2}
+      cy={size / 2}
+      r={radius}
+      fill="none"
+      stroke={segment.color}
+      strokeWidth={thickness}
+      strokeLinecap="butt"
+      opacity={dimmed ? 0.25 : 1}
+      transform={`rotate(${segment.rotation} ${size / 2} ${size / 2})`}
+      animatedProps={animatedProps}
+    />
   );
 }
